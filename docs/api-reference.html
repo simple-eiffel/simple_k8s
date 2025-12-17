@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - simple_k8s</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>simple_k8s</h1>
+        <p class="tagline">API Reference</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="user-guide.html">User Guide</a></li>
+            <li><a href="api-reference.html" class="active">API Reference</a></li>
+            <li><a href="architecture.html">Architecture</a></li>
+            <li><a href="cookbook.html">Cookbook</a></li>
+            <li><a href="https://github.com/simple-eiffel/simple_k8s">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section>
+            <h2>K8S_CLIENT</h2>
+            <p>Main facade for all Kubernetes API operations.</p>
+
+            <div class="api-section">
+                <h3>make</h3>
+                <div class="signature">make</div>
+                <p>Create client with automatic configuration detection. Checks for in-cluster environment first, then ~/.kube/config.</p>
+            </div>
+
+            <div class="api-section">
+                <h3>make_with_config</h3>
+                <div class="signature">make_with_config (a_config: K8S_CONFIG)</div>
+                <p>Create client with explicit configuration.</p>
+                <div class="contracts">
+                    <h4>Require</h4>
+                    <div class="require">config_not_void: a_config /= Void</div>
+                    <h4>Ensure</h4>
+                    <div class="ensure">config_set: config = a_config</div>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <h3>list_pods</h3>
+                <div class="signature">list_pods (a_namespace: STRING): detachable STRING</div>
+                <p>List all pods in namespace. Returns raw JSON response.</p>
+                <div class="contracts">
+                    <h4>Require</h4>
+                    <div class="require">namespace_not_empty: not a_namespace.is_empty</div>
+                    <div class="require">configured: is_configured</div>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <h3>scale_deployment</h3>
+                <div class="signature">scale_deployment (a_name, a_namespace: STRING; a_replicas: INTEGER): BOOLEAN</div>
+                <p>Scale deployment to specified replica count.</p>
+                <div class="contracts">
+                    <h4>Require</h4>
+                    <div class="require">name_not_empty: not a_name.is_empty</div>
+                    <div class="require">replicas_non_negative: a_replicas >= 0</div>
+                    <div class="require">configured: is_configured</div>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <h3>rollout_restart</h3>
+                <div class="signature">rollout_restart (a_name, a_namespace: STRING): BOOLEAN</div>
+                <p>Trigger rolling restart of deployment by updating restart annotation.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>K8S_POD</h2>
+            <p>Pod resource representation with status queries.</p>
+
+            <div class="api-section">
+                <h3>Attributes</h3>
+                <table class="api-table">
+                    <tr><th>Attribute</th><th>Type</th><th>Description</th></tr>
+                    <tr><td>name</td><td>STRING</td><td>Pod name</td></tr>
+                    <tr><td>namespace</td><td>STRING</td><td>Pod namespace</td></tr>
+                    <tr><td>phase</td><td>STRING</td><td>Pod phase (Running, Pending, etc.)</td></tr>
+                    <tr><td>pod_ip</td><td>detachable STRING</td><td>Assigned IP address</td></tr>
+                    <tr><td>node_name</td><td>detachable STRING</td><td>Node running the pod</td></tr>
+                </table>
+            </div>
+
+            <div class="api-section">
+                <h3>Status Queries</h3>
+                <table class="api-table">
+                    <tr><th>Query</th><th>Description</th></tr>
+                    <tr><td>is_running</td><td>Pod phase is "Running"</td></tr>
+                    <tr><td>is_pending</td><td>Pod phase is "Pending"</td></tr>
+                    <tr><td>is_succeeded</td><td>Pod phase is "Succeeded"</td></tr>
+                    <tr><td>is_failed</td><td>Pod phase is "Failed"</td></tr>
+                    <tr><td>is_ready</td><td>Running and all containers ready</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>K8S_SECRET</h2>
+            <p>Secret resource with automatic base64 decoding.</p>
+
+            <div class="api-section">
+                <h3>item</h3>
+                <div class="signature">item (a_key: STRING): detachable STRING</div>
+                <p>Get decoded value for key. Automatically decodes base64 data.</p>
+            </div>
+
+            <div class="api-section">
+                <h3>Type Queries</h3>
+                <table class="api-table">
+                    <tr><th>Query</th><th>Description</th></tr>
+                    <tr><td>is_opaque</td><td>Type is "Opaque"</td></tr>
+                    <tr><td>is_tls</td><td>Type is "kubernetes.io/tls"</td></tr>
+                    <tr><td>is_docker_config</td><td>Type is "kubernetes.io/dockerconfigjson"</td></tr>
+                    <tr><td>is_service_account_token</td><td>Type is "kubernetes.io/service-account-token"</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>K8S_ERROR</h2>
+            <p>Error classification and handling.</p>
+
+            <div class="api-section">
+                <h3>Error Queries</h3>
+                <table class="api-table">
+                    <tr><th>Query</th><th>HTTP Status</th><th>Description</th></tr>
+                    <tr><td>is_unauthorized</td><td>401</td><td>Authentication required</td></tr>
+                    <tr><td>is_forbidden</td><td>403</td><td>Permission denied</td></tr>
+                    <tr><td>is_not_found</td><td>404</td><td>Resource not found</td></tr>
+                    <tr><td>is_server_error</td><td>5xx</td><td>Server-side error</td></tr>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem</p>
+    </footer>
+</body>
+</html>

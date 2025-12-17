@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - simple_k8s</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>simple_k8s</h1>
+        <p class="tagline">Architecture</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="user-guide.html">User Guide</a></li>
+            <li><a href="api-reference.html">API Reference</a></li>
+            <li><a href="architecture.html" class="active">Architecture</a></li>
+            <li><a href="cookbook.html">Cookbook</a></li>
+            <li><a href="https://github.com/simple-eiffel/simple_k8s">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>simple_k8s follows a layered architecture with clear separation of concerns:</p>
+<pre><code>┌─────────────────────────────────────────┐
+│           Application Code              │
+├─────────────────────────────────────────┤
+│  K8S_CLIENT (Facade)                    │
+│  - Pod, Deployment, Service operations  │
+│  - ConfigMap, Secret, Namespace ops     │
+├─────────────────────────────────────────┤
+│  Resource Classes                       │
+│  - K8S_POD, K8S_DEPLOYMENT, K8S_SERVICE │
+│  - K8S_NAMESPACE, K8S_CONFIGMAP         │
+│  - K8S_SECRET                           │
+├─────────────────────────────────────────┤
+│  Spec Builders                          │
+│  - POD_SPEC, DEPLOYMENT_SPEC            │
+│  - SERVICE_SPEC                         │
+├─────────────────────────────────────────┤
+│  Core Infrastructure                    │
+│  - K8S_CONFIG (kubeconfig parsing)      │
+│  - K8S_AUTH (authentication)            │
+│  - K8S_ERROR (error handling)           │
+├─────────────────────────────────────────┤
+│  FOUNDATION_API                         │
+│  - HTTP client, JSON, Base64            │
+└─────────────────────────────────────────┘</code></pre>
+        </section>
+
+        <section>
+            <h2>Component Responsibilities</h2>
+
+            <h3>K8S_CLIENT</h3>
+            <p>The main facade providing all Kubernetes operations:</p>
+            <ul>
+                <li>Constructs API URLs for different resource types</li>
+                <li>Delegates HTTP operations to FOUNDATION_API</li>
+                <li>Manages error state via K8S_ERROR</li>
+                <li>Provides both raw JSON and typed resource access</li>
+            </ul>
+
+            <h3>K8S_CONFIG</h3>
+            <p>Handles Kubernetes authentication configuration:</p>
+            <ul>
+                <li>Parses ~/.kube/config YAML files</li>
+                <li>Extracts cluster endpoints, contexts, and credentials</li>
+                <li>Detects in-cluster environment via service account tokens</li>
+                <li>Supports bearer tokens and client certificates</li>
+            </ul>
+
+            <h3>Resource Classes</h3>
+            <p>Each K8S_* resource class provides:</p>
+            <ul>
+                <li>JSON parsing via <code>make_from_json</code></li>
+                <li>Type-safe access to resource attributes</li>
+                <li>Status queries (is_running, is_active, etc.)</li>
+                <li>Invariants ensuring data consistency</li>
+            </ul>
+
+            <h3>Spec Builders</h3>
+            <p>Fluent builders for creating Kubernetes resources:</p>
+            <ul>
+                <li>Chainable method calls for configuration</li>
+                <li>Validation via <code>is_valid</code> query</li>
+                <li>JSON generation via <code>to_json</code></li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Design Principles</h2>
+
+            <h3>Design by Contract</h3>
+            <p>All classes use full DBC:</p>
+            <ul>
+                <li><strong>Preconditions</strong>: Validate inputs (non-empty names, valid specs)</li>
+                <li><strong>Postconditions</strong>: Guarantee results (config_set after make_with_config)</li>
+                <li><strong>Invariants</strong>: Maintain consistency (name_not_empty throughout lifecycle)</li>
+            </ul>
+
+            <h3>Void Safety</h3>
+            <p>All code is void-safe:</p>
+            <ul>
+                <li>Optional values use <code>detachable</code> types</li>
+                <li>Clients use <code>attached</code> checks before access</li>
+                <li>No possibility of void calls at runtime</li>
+            </ul>
+
+            <h3>SCOOP Compatibility</h3>
+            <p>The library is designed for SCOOP concurrency:</p>
+            <ul>
+                <li>No shared mutable state between objects</li>
+                <li>Each K8S_CLIENT instance is independent</li>
+                <li>Resource objects are immutable after parsing</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Kubernetes API Mapping</h2>
+            <table>
+                <tr>
+                    <th>Resource</th>
+                    <th>API Group</th>
+                    <th>API Path</th>
+                </tr>
+                <tr>
+                    <td>Pods</td>
+                    <td>core/v1</td>
+                    <td>/api/v1/namespaces/{ns}/pods</td>
+                </tr>
+                <tr>
+                    <td>Deployments</td>
+                    <td>apps/v1</td>
+                    <td>/apis/apps/v1/namespaces/{ns}/deployments</td>
+                </tr>
+                <tr>
+                    <td>Services</td>
+                    <td>core/v1</td>
+                    <td>/api/v1/namespaces/{ns}/services</td>
+                </tr>
+                <tr>
+                    <td>ConfigMaps</td>
+                    <td>core/v1</td>
+                    <td>/api/v1/namespaces/{ns}/configmaps</td>
+                </tr>
+                <tr>
+                    <td>Secrets</td>
+                    <td>core/v1</td>
+                    <td>/api/v1/namespaces/{ns}/secrets</td>
+                </tr>
+                <tr>
+                    <td>Namespaces</td>
+                    <td>core/v1</td>
+                    <td>/api/v1/namespaces</td>
+                </tr>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>simple_k8s - Kubernetes Orchestration for Eiffel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/png" href="images/logo.png">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="images/logo.png" alt="simple_* logo" class="logo">
+        </div>
+        <h1>simple_k8s</h1>
+        <p class="tagline">Kubernetes Orchestration for Eiffel</p>
+        <div class="badges">
+            <span class="badge badge-version">v0.3.0</span>
+            <span class="badge badge-license">MIT</span>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html" class="active">Overview</a></li>
+            <li><a href="user-guide.html">User Guide</a></li>
+            <li><a href="api-reference.html">API Reference</a></li>
+            <li><a href="architecture.html">Architecture</a></li>
+            <li><a href="cookbook.html">Cookbook</a></li>
+            <li><a href="https://github.com/simple-eiffel/simple_k8s">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>
+                <strong>simple_k8s</strong> is an Eiffel library for programmatic Kubernetes cluster management.
+                It provides a clean, type-safe API for deploying, scaling, and managing containerized workloads
+                through the Kubernetes API.
+            </p>
+            <p>
+                Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem.
+            </p>
+        </section>
+
+        <section id="quick-start">
+            <h2>Quick Start</h2>
+
+            <h3>Installation</h3>
+            <ol>
+                <li>Set the environment variable:
+<pre><code>export SIMPLE_EIFFEL=/d/prod</code></pre>
+                </li>
+                <li>Add to your ECF file:
+<pre><code>&lt;library name="simple_k8s" location="$SIMPLE_EIFFEL/simple_k8s/simple_k8s.ecf"/&gt;</code></pre>
+                </li>
+            </ol>
+
+            <h3>Basic Usage</h3>
+<pre><code><span class="keyword">local</span>
+    client: <span class="type">K8S_CLIENT</span>
+<span class="keyword">do</span>
+    <span class="keyword">create</span> client.make  <span class="comment">-- Auto-detects kubeconfig</span>
+
+    <span class="keyword">if</span> client.is_configured <span class="keyword">then</span>
+        <span class="comment">-- List pods in default namespace</span>
+        <span class="keyword">if</span> <span class="keyword">attached</span> client.list_pods (<span class="string">"default"</span>) <span class="keyword">as</span> json <span class="keyword">then</span>
+            print (json)
+        <span class="keyword">end</span>
+
+        <span class="comment">-- Scale a deployment</span>
+        client.scale_deployment (<span class="string">"my-app"</span>, <span class="string">"production"</span>, 3)
+
+        <span class="comment">-- Get pod logs</span>
+        <span class="keyword">if</span> <span class="keyword">attached</span> client.pod_logs (<span class="string">"my-pod"</span>, <span class="string">"default"</span>) <span class="keyword">as</span> logs <span class="keyword">then</span>
+            print (logs)
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+        </section>
+
+        <section id="features">
+            <h2>Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Kubeconfig Parsing</h4>
+                    <p>Auto-detect ~/.kube/config or in-cluster service account credentials</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Pod Operations</h4>
+                    <p>List, get, create, delete pods; retrieve container logs</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Deployment Operations</h4>
+                    <p>Create, scale, delete deployments; trigger rolling restarts</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Service Operations</h4>
+                    <p>Create and manage ClusterIP, NodePort, and LoadBalancer services</p>
+                </div>
+                <div class="feature-card">
+                    <h4>ConfigMaps & Secrets</h4>
+                    <p>Access configuration data and secrets with automatic base64 decoding</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Design by Contract</h4>
+                    <p>Full preconditions, postconditions, and invariants throughout</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="api-classes">
+            <h2>API Classes</h2>
+            <table>
+                <tr>
+                    <th>Class</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><code>K8S_CLIENT</code></td>
+                    <td>Main facade for all Kubernetes API operations</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_CONFIG</code></td>
+                    <td>Kubeconfig parsing and in-cluster detection</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_POD</code></td>
+                    <td>Pod resource with status queries and describe output</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_DEPLOYMENT</code></td>
+                    <td>Deployment resource with replica status</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_SERVICE</code></td>
+                    <td>Service resource with type detection</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_NAMESPACE</code></td>
+                    <td>Namespace resource with phase status</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_CONFIGMAP</code></td>
+                    <td>ConfigMap with data access methods</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_SECRET</code></td>
+                    <td>Secret with base64 decoding and type detection</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="status">
+            <h2>Status</h2>
+            <p><strong>Development</strong> - 33 tests passing</p>
+            <p>The library is functional for basic Kubernetes operations. Future releases will add:</p>
+            <ul>
+                <li>KUBECTL_QUICK - One-liner convenience API</li>
+                <li>MANIFEST_BUILDER - YAML manifest generation</li>
+                <li>Watch/streaming operations</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem</p>
+        <p class="copyright">MIT License</p>
+    </footer>
+</body>
+</html>

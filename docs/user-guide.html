@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - simple_k8s</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>simple_k8s</h1>
+        <p class="tagline">User Guide</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="user-guide.html" class="active">User Guide</a></li>
+            <li><a href="api-reference.html">API Reference</a></li>
+            <li><a href="architecture.html">Architecture</a></li>
+            <li><a href="cookbook.html">Cookbook</a></li>
+            <li><a href="https://github.com/simple-eiffel/simple_k8s">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section>
+            <h2>Getting Started</h2>
+            <p>This guide walks you through using simple_k8s to manage Kubernetes clusters from Eiffel.</p>
+
+            <h3>Prerequisites</h3>
+            <ul>
+                <li>A running Kubernetes cluster (Docker Desktop, minikube, or remote cluster)</li>
+                <li>A valid kubeconfig file at <code>~/.kube/config</code></li>
+                <li>EiffelStudio 25.02 or later</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Connecting to a Cluster</h2>
+
+            <h3>Auto-Detection</h3>
+            <p>The simplest way to connect is to let K8S_CLIENT auto-detect your configuration:</p>
+<pre><code><span class="keyword">local</span>
+    client: <span class="type">K8S_CLIENT</span>
+<span class="keyword">do</span>
+    <span class="keyword">create</span> client.make
+
+    <span class="keyword">if</span> client.is_configured <span class="keyword">then</span>
+        print (<span class="string">"Connected to cluster%N"</span>)
+    <span class="keyword">else</span>
+        print (<span class="string">"Could not configure client%N"</span>)
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+
+            <h3>Explicit Configuration</h3>
+            <p>For more control, create the config explicitly:</p>
+<pre><code><span class="keyword">local</span>
+    client: <span class="type">K8S_CLIENT</span>
+    config: <span class="type">K8S_CONFIG</span>
+<span class="keyword">do</span>
+    <span class="keyword">create</span> config.make_from_file (<span class="string">"/path/to/kubeconfig"</span>)
+
+    <span class="keyword">if</span> config.is_valid <span class="keyword">then</span>
+        <span class="keyword">create</span> client.make_with_config (config)
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Working with Pods</h2>
+
+            <h3>Listing Pods</h3>
+<pre><code><span class="keyword">if</span> <span class="keyword">attached</span> client.list_pods (<span class="string">"default"</span>) <span class="keyword">as</span> json <span class="keyword">then</span>
+    <span class="comment">-- json contains raw API response</span>
+    print (json)
+<span class="keyword">end</span></code></pre>
+
+            <h3>Getting a Specific Pod</h3>
+<pre><code><span class="keyword">if</span> <span class="keyword">attached</span> client.get_pod (<span class="string">"my-pod"</span>, <span class="string">"default"</span>) <span class="keyword">as</span> json <span class="keyword">then</span>
+    <span class="keyword">create</span> pod.make_from_json (json)
+
+    print (<span class="string">"Pod: "</span> + pod.name + <span class="string">"%N"</span>)
+    print (<span class="string">"Status: "</span> + pod.phase + <span class="string">"%N"</span>)
+
+    <span class="keyword">if</span> pod.is_running <span class="keyword">then</span>
+        print (<span class="string">"Pod is running%N"</span>)
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+
+            <h3>Creating a Pod</h3>
+<pre><code><span class="keyword">local</span>
+    spec: <span class="type">POD_SPEC</span>
+<span class="keyword">do</span>
+    <span class="keyword">create</span> spec.make (<span class="string">"my-pod"</span>, <span class="string">"default"</span>, <span class="string">"nginx:alpine"</span>)
+    spec.add_port (80)
+    spec.add_env (<span class="string">"DEBUG"</span>, <span class="string">"true"</span>)
+
+    <span class="keyword">if</span> <span class="keyword">attached</span> client.create_pod (spec) <span class="keyword">as</span> result <span class="keyword">then</span>
+        print (<span class="string">"Pod created%N"</span>)
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+
+            <h3>Getting Pod Logs</h3>
+<pre><code><span class="keyword">if</span> <span class="keyword">attached</span> client.pod_logs (<span class="string">"my-pod"</span>, <span class="string">"default"</span>) <span class="keyword">as</span> logs <span class="keyword">then</span>
+    print (logs)
+<span class="keyword">end</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Working with Deployments</h2>
+
+            <h3>Scaling a Deployment</h3>
+<pre><code><span class="keyword">if</span> client.scale_deployment (<span class="string">"my-app"</span>, <span class="string">"production"</span>, 5) <span class="keyword">then</span>
+    print (<span class="string">"Scaled to 5 replicas%N"</span>)
+<span class="keyword">end</span></code></pre>
+
+            <h3>Rolling Restart</h3>
+<pre><code><span class="keyword">if</span> client.rollout_restart (<span class="string">"my-app"</span>, <span class="string">"production"</span>) <span class="keyword">then</span>
+    print (<span class="string">"Restart triggered%N"</span>)
+<span class="keyword">end</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Working with ConfigMaps and Secrets</h2>
+
+            <h3>Reading a ConfigMap</h3>
+<pre><code><span class="keyword">if</span> <span class="keyword">attached</span> client.get_configmap (<span class="string">"app-config"</span>, <span class="string">"default"</span>) <span class="keyword">as</span> json <span class="keyword">then</span>
+    <span class="keyword">create</span> cm.make_from_json (json)
+
+    <span class="keyword">if</span> cm.has_key (<span class="string">"DATABASE_URL"</span>) <span class="keyword">then</span>
+        <span class="keyword">if</span> <span class="keyword">attached</span> cm.item (<span class="string">"DATABASE_URL"</span>) <span class="keyword">as</span> url <span class="keyword">then</span>
+            print (<span class="string">"Database: "</span> + url + <span class="string">"%N"</span>)
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+
+            <h3>Reading a Secret</h3>
+<pre><code><span class="keyword">if</span> <span class="keyword">attached</span> client.get_secret (<span class="string">"db-credentials"</span>, <span class="string">"default"</span>) <span class="keyword">as</span> json <span class="keyword">then</span>
+    <span class="keyword">create</span> secret.make_from_json (json)
+
+    <span class="comment">-- Data is automatically base64 decoded</span>
+    <span class="keyword">if</span> <span class="keyword">attached</span> secret.item (<span class="string">"password"</span>) <span class="keyword">as</span> pwd <span class="keyword">then</span>
+        print (<span class="string">"Password retrieved%N"</span>)
+    <span class="keyword">end</span>
+
+    <span class="keyword">if</span> secret.is_tls <span class="keyword">then</span>
+        print (<span class="string">"This is a TLS certificate secret%N"</span>)
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Error Handling</h2>
+<pre><code>client.delete_pod (<span class="string">"nonexistent"</span>, <span class="string">"default"</span>)
+
+<span class="keyword">if</span> client.has_error <span class="keyword">then</span>
+    <span class="keyword">if</span> <span class="keyword">attached</span> client.last_error <span class="keyword">as</span> err <span class="keyword">then</span>
+        <span class="keyword">if</span> err.is_not_found <span class="keyword">then</span>
+            print (<span class="string">"Pod not found%N"</span>)
+        <span class="keyword">elseif</span> err.is_forbidden <span class="keyword">then</span>
+            print (<span class="string">"Permission denied%N"</span>)
+        <span class="keyword">else</span>
+            print (<span class="string">"Error: "</span> + err.to_string + <span class="string">"%N"</span>)
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span></code></pre>
+        </section>
+    </main>
+
+    <footer>
+        <p>Part of the <a href="https://github.com/simple-eiffel">Simple Eiffel</a> ecosystem</p>
+    </footer>
+</body>
+</html>
