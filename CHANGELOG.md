@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.5.0] - 2025-12-17
+
+### Added
+- **Security Tests** - Comprehensive security-focused test suite
+  - K8s name validation tests (RFC 1123 label compliance)
+  - Path traversal attack prevention tests
+  - JSON escaping verification for environment variables
+  - Service type invariant tests
+  - Deployment strategy invariant tests
+  - Maximum name length enforcement tests
+  - Zero replicas validation tests
+- 9 new security tests
+
+### Changed
+- Test count increased from 81 to 90 tests
+- DBC contracts audited across all K8S classes
+
 ## [0.4.0] - 2025-12-17
 
 ### Added

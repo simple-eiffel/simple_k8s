@@ -141,6 +141,17 @@ feature -- Execution
 			run_test (agent lib_tests.test_kubectl_quick_make, "test_kubectl_quick_make")
 			run_test (agent lib_tests.test_kubectl_quick_namespace, "test_kubectl_quick_namespace")
 
+			io.put_string ("%NSecurity Tests:%N")
+			run_test (agent lib_tests.test_security_valid_k8s_names, "test_security_valid_k8s_names")
+			run_test (agent lib_tests.test_security_invalid_k8s_names, "test_security_invalid_k8s_names")
+			run_test (agent lib_tests.test_security_path_traversal_names, "test_security_path_traversal_names")
+			run_test (agent lib_tests.test_security_json_escaping_env_vars, "test_security_json_escaping_env_vars")
+			run_test (agent lib_tests.test_security_service_type_invariant, "test_security_service_type_invariant")
+			run_test (agent lib_tests.test_security_deployment_strategy_invariant, "test_security_deployment_strategy_invariant")
+			run_test (agent lib_tests.test_security_max_name_length, "test_security_max_name_length")
+			run_test (agent lib_tests.test_security_is_valid_checks_all_constraints, "test_security_is_valid_checks_all_constraints")
+			run_test (agent lib_tests.test_security_zero_replicas_valid, "test_security_zero_replicas_valid")
+
 			io.put_string ("%N=== Results: " + passed.out + " passed, " + failed.out + " failed ===%N")
 			if failed > 0 then
 				io.put_string ("TESTS FAILED%N")

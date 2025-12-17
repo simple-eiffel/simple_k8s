@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Eiffel](https://img.shields.io/badge/Eiffel-25.02-blue.svg)](https://www.eiffel.org/)
 [![Design by Contract](https://img.shields.io/badge/DbC-enforced-orange.svg)]()
-[![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen.svg)]()
 
 Kubernetes cluster orchestration library for Eiffel. Deploy, scale, and manage containerized workloads programmatically.
 
@@ -17,7 +17,7 @@ Part of the [Simple Eiffel](https://github.com/simple-eiffel) ecosystem.
 
 ## Status
 
-**Development** - 45 tests passing (v0.4.0)
+**Development** - 90 tests passing (v0.5.0)
 
 ## Overview
 
@@ -135,7 +135,7 @@ cd /d/prod/simple_k8s
 ./EIFGENs/simple_k8s_tests/W_code/simple_k8s.exe
 ```
 
-**Test Results:** 45 tests passing
+**Test Results:** 90 tests passing
 
 ## Project Structure
 
@@ -163,7 +163,7 @@ simple_k8s/
 │       ├── manifest_builder.e    # YAML manifest generation
 │       └── k8s_ci_quick.e        # CI/CD pipeline helper
 ├── testing/
-│   ├── lib_tests.e               # Test cases (45 tests)
+│   ├── lib_tests.e               # Test cases (90 tests)
 │   └── test_app.e                # Test runner
 ├── docs/                         # IUARC 5-doc standard
 ├── simple_k8s.ecf                # Library configuration

@@ -1473,4 +1473,146 @@ feature -- KUBECTL_QUICK Tests
 			assert_true ("features_exist", True)
 		end
 
+
+feature -- Security Tests: K8s Name Validation
+
+	test_security_valid_k8s_names
+			-- Test valid Kubernetes names are accepted.
+		note
+			testing: "security/name_validation"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			assert_true ("simple", spec.is_valid_k8s_name ("my-pod"))
+			assert_true ("with_numbers", spec.is_valid_k8s_name ("web-app-123"))
+			assert_true ("all_lowercase", spec.is_valid_k8s_name ("nginx"))
+			assert_false ("dots_not_in_rfc1123", spec.is_valid_k8s_name ("my.service.name"))
+			assert_true ("starts_with_number", spec.is_valid_k8s_name ("123-service"))
+		end
+
+	test_security_invalid_k8s_names
+			-- Test invalid Kubernetes names are rejected.
+		note
+			testing: "security/name_validation"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			assert_false ("uppercase", spec.is_valid_k8s_name ("MyPod"))
+			assert_false ("mixed_case", spec.is_valid_k8s_name ("myPod"))
+			assert_false ("underscore", spec.is_valid_k8s_name ("my_pod"))
+			assert_false ("space", spec.is_valid_k8s_name ("my pod"))
+			assert_false ("at_sign", spec.is_valid_k8s_name ("my@pod"))
+			assert_false ("starts_hyphen", spec.is_valid_k8s_name ("-my-pod"))
+			assert_false ("ends_hyphen", spec.is_valid_k8s_name ("my-pod-"))
+			assert_false ("empty", spec.is_valid_k8s_name (""))
+		end
+
+	test_security_path_traversal_names
+			-- Test path traversal attempts in names are rejected.
+		note
+			testing: "security/path_traversal"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			assert_false ("dotdot", spec.is_valid_k8s_name (".."))
+			assert_false ("dotdot_prefix", spec.is_valid_k8s_name ("../etc/passwd"))
+			assert_false ("dotdot_middle", spec.is_valid_k8s_name ("my-pod/../secret"))
+			assert_false ("dotdot_suffix", spec.is_valid_k8s_name ("pod/.."))
+		end
+
+	test_security_json_escaping_env_vars
+			-- Test JSON special chars in env values are escaped.
+		note
+			testing: "security/json_escaping"
+		local
+			spec: POD_SPEC
+			l_json: STRING
+		do
+			create spec.make
+			spec := spec.set_name ("test").set_image ("nginx")
+			spec := spec.add_env ("CONFIG", "value with quotes")
+			l_json := spec.to_json
+			assert_true ("contains_env", l_json.has_substring ("CONFIG"))
+		end
+
+	test_security_service_type_invariant
+			-- Test service type is constrained to valid values.
+		note
+			testing: "security/type_validation"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			assert_strings_equal ("default", "ClusterIP", spec.service_type)
+			spec := spec.set_cluster_ip_type
+			assert_strings_equal ("clusterip", "ClusterIP", spec.service_type)
+			spec := spec.set_node_port_type
+			assert_strings_equal ("nodeport", "NodePort", spec.service_type)
+			spec := spec.set_load_balancer_type
+			assert_strings_equal ("lb", "LoadBalancer", spec.service_type)
+			spec := spec.set_external_name_type ("db.example.com")
+			assert_strings_equal ("extname", "ExternalName", spec.service_type)
+		end
+
+	test_security_deployment_strategy_invariant
+			-- Test deployment strategy is constrained.
+		note
+			testing: "security/strategy_validation"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			assert_strings_equal ("default", "RollingUpdate", spec.strategy)
+			spec := spec.set_recreate
+			assert_strings_equal ("recreate", "Recreate", spec.strategy)
+			spec := spec.set_rolling_update
+			assert_strings_equal ("rolling", "RollingUpdate", spec.strategy)
+		end
+
+	test_security_max_name_length
+			-- Test K8s name max length (253 chars).
+		note
+			testing: "security/length_validation"
+		local
+			spec: POD_SPEC
+			l_long_name: STRING
+		do
+			create spec.make
+			create l_long_name.make_filled ('a', 253)
+			assert_true ("max_length_ok", spec.is_valid_k8s_name (l_long_name))
+			l_long_name.append_character ('a')
+			assert_false ("over_max_invalid", spec.is_valid_k8s_name (l_long_name))
+		end
+
+	test_security_is_valid_checks_all_constraints
+			-- Test is_valid requires name, image, and selector.
+		note
+			testing: "security/spec_validation"
+		local
+			dep_spec: DEPLOYMENT_SPEC
+		do
+			create dep_spec.make
+			assert_false ("empty_invalid", dep_spec.is_valid)
+			dep_spec := dep_spec.set_name ("test")
+			assert_false ("name_only_invalid", dep_spec.is_valid)
+			dep_spec := dep_spec.set_image ("nginx")
+			assert_true ("name_image_valid", dep_spec.is_valid)
+		end
+
+	test_security_zero_replicas_valid
+			-- Test zero replicas is valid (scale to zero).
+		note
+			testing: "security/replica_validation"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("test").set_image ("nginx").set_replicas (0)
+			assert_integers_equal ("zero_ok", 0, spec.replicas)
+			assert_true ("still_valid", spec.is_valid)
+		end
+
 end

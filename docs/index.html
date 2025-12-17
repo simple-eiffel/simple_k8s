@@ -15,7 +15,7 @@
         <h1>simple_k8s</h1>
         <p class="tagline">Kubernetes Orchestration for Eiffel</p>
         <div class="badges">
-            <span class="badge badge-version">v0.3.0</span>
+            <span class="badge badge-version">v0.5.0</span>
             <span class="badge badge-license">MIT</span>
         </div>
     </header>
@@ -149,17 +149,47 @@
                     <td><code>K8S_SECRET</code></td>
                     <td>Secret with base64 decoding and type detection</td>
                 </tr>
+                <tr>
+                    <td><code>POD_SPEC</code></td>
+                    <td>Fluent builder for pod configuration</td>
+                </tr>
+                <tr>
+                    <td><code>DEPLOYMENT_SPEC</code></td>
+                    <td>Fluent builder for deployment configuration</td>
+                </tr>
+                <tr>
+                    <td><code>SERVICE_SPEC</code></td>
+                    <td>Fluent builder for service configuration</td>
+                </tr>
+                <tr>
+                    <td><code>KUBECTL_QUICK</code></td>
+                    <td>One-liner convenience API for common operations</td>
+                </tr>
+                <tr>
+                    <td><code>MANIFEST_BUILDER</code></td>
+                    <td>YAML manifest generation for kubectl apply</td>
+                </tr>
+                <tr>
+                    <td><code>K8S_CI_QUICK</code></td>
+                    <td>CI/CD pipeline operations with exit codes</td>
+                </tr>
             </table>
         </section>
 
         <section id="status">
             <h2>Status</h2>
-            <p><strong>Development</strong> - 33 tests passing</p>
-            <p>The library is functional for basic Kubernetes operations. Future releases will add:</p>
+            <p><strong>v0.5.0</strong> - 90 tests passing</p>
+            <p>The library is production-ready for core Kubernetes operations. Includes:</p>
             <ul>
                 <li>KUBECTL_QUICK - One-liner convenience API</li>
                 <li>MANIFEST_BUILDER - YAML manifest generation</li>
+                <li>K8S_CI_QUICK - CI/CD pipeline integration</li>
+                <li>Security tests with RFC 1123 name validation</li>
+            </ul>
+            <p>Future releases will add:</p>
+            <ul>
                 <li>Watch/streaming operations</li>
+                <li>Ingress and NetworkPolicy resources</li>
             </ul>
         </section>
     </main>
