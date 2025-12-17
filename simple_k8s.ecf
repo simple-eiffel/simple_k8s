@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<system xmlns="http://www.eiffel.com/developers/xml/configuration-1-23-0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eiffel.com/developers/xml/configuration-1-23-0 http://www.eiffel.com/developers/xml/configuration-1-23-0.xsd" name="simple_k8s" uuid="05D17424-D4F8-4B55-BBB4-5C993D80E6B5" library_target="simple_k8s">
+	<description>
+		Kubernetes cluster orchestration for Eiffel.
+		Deploy, scale, and manage containerized workloads programmatically.
+	</description>
+	<target name="simple_k8s">
+		<root all_classes="true"/>
+		<file_rule>
+			<exclude>/.git$</exclude>
+			<exclude>/EIFGENs$</exclude>
+			<exclude>/testing$</exclude>
+		</file_rule>
+		<option warning="warning" syntax="standard" manifest_array_type="mismatch_warning">
+			<assertions precondition="true" postcondition="true" check="true" invariant="true"/>
+		</option>
+		<setting name="console_application" value="true"/>
+		<setting name="dead_code_removal" value="feature"/>
+		<capability>
+			<concurrency support="scoop"/>
+			<void_safety support="all"/>
+		</capability>
+		<library name="base" location="$ISE_LIBRARY\library\base\base.ecf"/>
+		<library name="simple_foundation_api" location="$SIMPLE_EIFFEL\simple_foundation_api\simple_foundation_api.ecf"/>
+		<library name="simple_http" location="$SIMPLE_EIFFEL\simple_http\simple_http.ecf"/>
+		<library name="time" location="$ISE_LIBRARY\library\time\time.ecf"/>
+		<cluster name="constants" location=".\src\constants\"/>
+		<cluster name="core" location=".\src\core\"/>
+		<cluster name="resources" location=".\src\resources\"/>
+		<cluster name="specs" location=".\src\specs\"/>
+		<cluster name="util" location=".\src\util\"/>
+	</target>
+	<target name="simple_k8s_tests" extends="simple_k8s">
+		<description>Test target for simple_k8s</description>
+		<root class="TEST_APP" feature="make"/>
+		<option>
+			<assertions precondition="true" postcondition="true" check="true" invariant="true" loop="true"/>
+		</option>
+		<library name="simple_testing" location="$SIMPLE_EIFFEL\simple_testing\simple_testing.ecf"/>
+		<library name="testing" location="$ISE_LIBRARY\library\testing\testing.ecf"/>
+		<cluster name="tests" location=".\testing\"/>
+	</target>
+</system>
