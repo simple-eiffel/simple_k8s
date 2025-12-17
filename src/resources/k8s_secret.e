@@ -149,14 +149,12 @@ feature -- Type Queries
 
 feature {NONE} -- Parsing
 
-	parse_json (a_obj: like api.json.json_object_typeref)
+	parse_json (a_obj: like api.new_json_object)
 			-- Parse JSON object into secret fields.
 		require
 			obj_attached: a_obj /= Void
 		local
-			l_metadata: like api.json.json_object_typeref
-			l_key: STRING_32
-			l_val: STRING_32
+			l_metadata: detachable like api.new_json_object
 		do
 			-- Initialize defaults
 			name := "unknown"
@@ -173,8 +171,8 @@ feature {NONE} -- Parsing
 			end
 
 			-- Parse metadata
-			if attached a_obj.object_item ("metadata") as meta then
-				l_metadata := meta
+			l_metadata := a_obj.object_item ("metadata")
+			if attached l_metadata then
 				if attached l_metadata.string_item ("name") as n then
 					name := n.to_string_8
 				end
@@ -191,50 +189,33 @@ feature {NONE} -- Parsing
 					creation_timestamp := ts.to_string_8
 				end
 				-- Parse labels
-				if attached l_metadata.object_item ("labels") as lbl_obj then
-					from lbl_obj.start until lbl_obj.after loop
-						l_key := lbl_obj.key_for_iteration
-						if attached lbl_obj.item_for_iteration.as_string as lv then
-							l_val := lv
-							labels.put (l_val.to_string_8, l_key.to_string_8)
-						end
-						lbl_obj.forth
-					end
-				end
+				parse_string_map (l_metadata.object_item ("labels"), labels)
 				-- Parse annotations
-				if attached l_metadata.object_item ("annotations") as ann_obj then
-					from ann_obj.start until ann_obj.after loop
-						l_key := ann_obj.key_for_iteration
-						if attached ann_obj.item_for_iteration.as_string as av then
-							l_val := av
-							annotations.put (l_val.to_string_8, l_key.to_string_8)
-						end
-						ann_obj.forth
-					end
-				end
+				parse_string_map (l_metadata.object_item ("annotations"), annotations)
 			end
 
 			-- Parse data (base64)
-			if attached a_obj.object_item ("data") as data_obj then
-				from data_obj.start until data_obj.after loop
-					l_key := data_obj.key_for_iteration
-					if attached data_obj.item_for_iteration.as_string as dv then
-						l_val := dv
-						data.put (l_val.to_string_8, l_key.to_string_8)
-					end
-					data_obj.forth
-				end
-			end
+			parse_string_map (a_obj.object_item ("data"), data)
 
 			-- Parse stringData
-			if attached a_obj.object_item ("stringData") as str_obj then
-				from str_obj.start until str_obj.after loop
-					l_key := str_obj.key_for_iteration
-					if attached str_obj.item_for_iteration.as_string as sv then
-						l_val := sv
-						string_data.put (l_val.to_string_8, l_key.to_string_8)
+			parse_string_map (a_obj.object_item ("stringData"), string_data)
+		end
+
+	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+			-- Parse JSON object into string map.
+		local
+			l_keys: ARRAY [STRING_32]
+			i: INTEGER
+			l_key: STRING_32
+		do
+			if attached a_obj then
+				l_keys := a_obj.keys
+				from i := l_keys.lower until i > l_keys.upper loop
+					l_key := l_keys [i]
+					if attached a_obj.string_item (l_key) as l_val then
+						a_map.put (l_val.to_string_8, l_key.to_string_8)
 					end
-					str_obj.forth
+					i := i + 1
 				end
 			end
 		end
