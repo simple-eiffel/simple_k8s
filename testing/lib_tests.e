@@ -609,6 +609,675 @@ feature -- K8S_SECRET Tests
 			assert_false ("no_missing", sec.has_key ("missing"))
 		end
 
+feature -- K8S_POD Tests
+
+	test_pod_make
+			-- Test pod creation with name and namespace.
+		note
+			testing: "covers/{K8S_POD}.make"
+		local
+			pod: K8S_POD
+		do
+			create pod.make ("my-pod", "production")
+			assert_strings_equal ("name", "my-pod", pod.name)
+			assert_strings_equal ("namespace", "production", pod.namespace)
+			assert_strings_equal ("phase", "Unknown", pod.phase)
+			assert_false ("not_running", pod.is_running)
+		end
+
+	test_pod_from_json
+			-- Test pod parsing from JSON.
+		note
+			testing: "covers/{K8S_POD}.make_from_json"
+		local
+			pod: K8S_POD
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"apiVersion": "v1",
+					"kind": "Pod",
+					"metadata": {
+						"name": "web-server",
+						"namespace": "default",
+						"uid": "pod-123",
+						"labels": {"app": "web", "tier": "frontend"}
+					},
+					"spec": {
+						"nodeName": "node-1",
+						"containers": [{
+							"name": "nginx",
+							"image": "nginx:alpine"
+						}]
+					},
+					"status": {
+						"phase": "Running",
+						"podIP": "10.0.0.5",
+						"hostIP": "192.168.1.10"
+					}
+				}
+			]"
+			create pod.make_from_json (l_json)
+			assert_false ("no_parse_error", pod.has_parse_error)
+			assert_strings_equal ("name", "web-server", pod.name)
+			assert_strings_equal ("phase", "Running", pod.phase)
+			assert_true ("is_running", pod.is_running)
+			if attached pod.pod_ip as ip then
+				assert_strings_equal ("pod_ip", "10.0.0.5", ip)
+			else
+				assert_true ("pod_ip_attached", False)
+			end
+			if attached pod.image as img then
+				assert_strings_equal ("image", "nginx:alpine", img)
+			end
+		end
+
+	test_pod_status_pending
+			-- Test pod pending status.
+		note
+			testing: "covers/{K8S_POD}.is_pending"
+		local
+			pod: K8S_POD
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "pending-pod", "namespace": "default"},
+					"status": {"phase": "Pending"}
+				}
+			]"
+			create pod.make_from_json (l_json)
+			assert_true ("is_pending", pod.is_pending)
+			assert_false ("not_running", pod.is_running)
+		end
+
+	test_pod_status_succeeded
+			-- Test pod succeeded status.
+		note
+			testing: "covers/{K8S_POD}.is_succeeded"
+		local
+			pod: K8S_POD
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "job-pod", "namespace": "default"},
+					"status": {"phase": "Succeeded"}
+				}
+			]"
+			create pod.make_from_json (l_json)
+			assert_true ("is_succeeded", pod.is_succeeded)
+		end
+
+	test_pod_status_failed
+			-- Test pod failed status.
+		note
+			testing: "covers/{K8S_POD}.is_failed"
+		local
+			pod: K8S_POD
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "crash-pod", "namespace": "default"},
+					"status": {"phase": "Failed"}
+				}
+			]"
+			create pod.make_from_json (l_json)
+			assert_true ("is_failed", pod.is_failed)
+		end
+
+	test_pod_describe
+			-- Test pod describe output.
+		note
+			testing: "covers/{K8S_POD}.describe"
+		local
+			pod: K8S_POD
+			l_desc: STRING
+		do
+			create pod.make ("test-pod", "default")
+			l_desc := pod.describe
+			assert_true ("has_name", l_desc.has_substring ("Name: test-pod"))
+			assert_true ("has_namespace", l_desc.has_substring ("Namespace: default"))
+		end
+
+feature -- K8S_DEPLOYMENT Tests
+
+	test_deployment_make
+			-- Test deployment creation with name and namespace.
+		note
+			testing: "covers/{K8S_DEPLOYMENT}.make"
+		local
+			dep: K8S_DEPLOYMENT
+		do
+			create dep.make ("web-app", "production")
+			assert_strings_equal ("name", "web-app", dep.name)
+			assert_strings_equal ("namespace", "production", dep.namespace)
+			assert_integers_equal ("replicas", 0, dep.replicas)
+		end
+
+	test_deployment_from_json
+			-- Test deployment parsing from JSON.
+		note
+			testing: "covers/{K8S_DEPLOYMENT}.make_from_json"
+		local
+			dep: K8S_DEPLOYMENT
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"apiVersion": "apps/v1",
+					"kind": "Deployment",
+					"metadata": {
+						"name": "api-server",
+						"namespace": "production",
+						"uid": "dep-456",
+						"labels": {"app": "api"}
+					},
+					"spec": {
+						"replicas": 3,
+						"selector": {"matchLabels": {"app": "api"}},
+						"template": {
+							"spec": {
+								"containers": [{"name": "api", "image": "api:v2"}]
+							}
+						}
+					},
+					"status": {
+						"replicas": 3,
+						"readyReplicas": 3,
+						"availableReplicas": 3,
+						"updatedReplicas": 3
+					}
+				}
+			]"
+			create dep.make_from_json (l_json)
+			assert_false ("no_parse_error", dep.has_parse_error)
+			assert_strings_equal ("name", "api-server", dep.name)
+			assert_integers_equal ("replicas", 3, dep.replicas)
+			assert_integers_equal ("ready", 3, dep.ready_replicas)
+			assert_true ("is_available", dep.is_available)
+			assert_true ("is_complete", dep.is_complete)
+		end
+
+	test_deployment_progressing
+			-- Test deployment progressing status.
+		note
+			testing: "covers/{K8S_DEPLOYMENT}.is_progressing"
+		local
+			dep: K8S_DEPLOYMENT
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "updating", "namespace": "default"},
+					"spec": {"replicas": 3},
+					"status": {
+						"replicas": 3,
+						"readyReplicas": 2,
+						"availableReplicas": 2,
+						"updatedReplicas": 1,
+						"unavailableReplicas": 1
+					}
+				}
+			]"
+			create dep.make_from_json (l_json)
+			assert_true ("is_progressing", dep.is_progressing)
+			assert_false ("not_complete", dep.is_complete)
+		end
+
+	test_deployment_describe
+			-- Test deployment describe output.
+		note
+			testing: "covers/{K8S_DEPLOYMENT}.describe"
+		local
+			dep: K8S_DEPLOYMENT
+			l_desc: STRING
+		do
+			create dep.make ("my-deploy", "default")
+			l_desc := dep.describe
+			assert_true ("has_name", l_desc.has_substring ("Name: my-deploy"))
+		end
+
+feature -- K8S_SERVICE Tests
+
+	test_service_make
+			-- Test service creation with name and namespace.
+		note
+			testing: "covers/{K8S_SERVICE}.make"
+		local
+			svc: K8S_SERVICE
+		do
+			create svc.make ("web-svc", "production")
+			assert_strings_equal ("name", "web-svc", svc.name)
+			assert_strings_equal ("namespace", "production", svc.namespace)
+			assert_strings_equal ("type", "ClusterIP", svc.service_type)
+			assert_true ("is_cluster_ip", svc.is_cluster_ip)
+		end
+
+	test_service_from_json_clusterip
+			-- Test ClusterIP service parsing.
+		note
+			testing: "covers/{K8S_SERVICE}.make_from_json"
+		local
+			svc: K8S_SERVICE
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"apiVersion": "v1",
+					"kind": "Service",
+					"metadata": {
+						"name": "internal-svc",
+						"namespace": "default",
+						"uid": "svc-789"
+					},
+					"spec": {
+						"type": "ClusterIP",
+						"clusterIP": "10.96.0.100",
+						"selector": {"app": "backend"},
+						"ports": [{
+							"name": "http",
+							"port": 80,
+							"targetPort": 8080,
+							"protocol": "TCP"
+						}]
+					}
+				}
+			]"
+			create svc.make_from_json (l_json)
+			assert_false ("no_parse_error", svc.has_parse_error)
+			assert_strings_equal ("name", "internal-svc", svc.name)
+			assert_true ("is_cluster_ip", svc.is_cluster_ip)
+			if attached svc.cluster_ip as cip then
+				assert_strings_equal ("cluster_ip", "10.96.0.100", cip)
+			end
+			assert_integers_equal ("port_count", 1, svc.ports.count)
+		end
+
+	test_service_nodeport
+			-- Test NodePort service type.
+		note
+			testing: "covers/{K8S_SERVICE}.is_node_port"
+		local
+			svc: K8S_SERVICE
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "nodeport-svc", "namespace": "default"},
+					"spec": {
+						"type": "NodePort",
+						"ports": [{"port": 80, "nodePort": 30080}]
+					}
+				}
+			]"
+			create svc.make_from_json (l_json)
+			assert_true ("is_node_port", svc.is_node_port)
+			assert_false ("not_cluster_ip", svc.is_cluster_ip)
+		end
+
+	test_service_loadbalancer
+			-- Test LoadBalancer service type.
+		note
+			testing: "covers/{K8S_SERVICE}.is_load_balancer"
+		local
+			svc: K8S_SERVICE
+			l_json: STRING
+		do
+			l_json := "[
+				{
+					"metadata": {"name": "lb-svc", "namespace": "default"},
+					"spec": {"type": "LoadBalancer", "ports": [{"port": 443}]},
+					"status": {
+						"loadBalancer": {
+							"ingress": [{"ip": "203.0.113.50"}]
+						}
+					}
+				}
+			]"
+			create svc.make_from_json (l_json)
+			assert_true ("is_load_balancer", svc.is_load_balancer)
+			assert_true ("has_external_ip", svc.has_external_ip)
+			if attached svc.load_balancer_ip as lbip then
+				assert_strings_equal ("lb_ip", "203.0.113.50", lbip)
+			end
+		end
+
+	test_service_describe
+			-- Test service describe output.
+		note
+			testing: "covers/{K8S_SERVICE}.describe"
+		local
+			svc: K8S_SERVICE
+			l_desc: STRING
+		do
+			create svc.make ("my-svc", "default")
+			l_desc := svc.describe
+			assert_true ("has_name", l_desc.has_substring ("Name: my-svc"))
+			assert_true ("has_type", l_desc.has_substring ("Type: ClusterIP"))
+		end
+
+feature -- POD_SPEC Tests
+
+	test_pod_spec_make
+			-- Test pod spec creation.
+		note
+			testing: "covers/{POD_SPEC}.make"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			assert_strings_equal ("empty_name", "", spec.name)
+			assert_strings_equal ("default_ns", "default", spec.namespace)
+			assert_strings_equal ("restart", "Always", spec.restart_policy)
+			assert_false ("not_valid", spec.is_valid)
+		end
+
+	test_pod_spec_fluent_builder
+			-- Test pod spec fluent builder.
+		note
+			testing: "covers/{POD_SPEC}.set_name"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("web-pod").set_image ("nginx:alpine").set_namespace ("production")
+			assert_strings_equal ("name", "web-pod", spec.name)
+			assert_strings_equal ("image", "nginx:alpine", spec.image)
+			assert_strings_equal ("namespace", "production", spec.namespace)
+			assert_true ("is_valid", spec.is_valid)
+		end
+
+	test_pod_spec_env_and_ports
+			-- Test adding env and ports.
+		note
+			testing: "covers/{POD_SPEC}.add_env"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("app").set_image ("app:v1")
+			spec := spec.add_env ("DATABASE_URL", "postgres://localhost")
+			spec := spec.add_port ("http", 8080)
+			assert_true ("has_env", spec.environment.has ("DATABASE_URL"))
+			assert_integers_equal ("port_count", 1, spec.ports.count)
+		end
+
+	test_pod_spec_valid_k8s_name
+			-- Test K8s name validation.
+		note
+			testing: "covers/{POD_SPEC}.is_valid_k8s_name"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			assert_true ("valid_simple", spec.is_valid_k8s_name ("my-pod"))
+			assert_true ("valid_with_numbers", spec.is_valid_k8s_name ("web-app-123"))
+			assert_false ("invalid_uppercase", spec.is_valid_k8s_name ("MyPod"))
+			assert_false ("invalid_underscore", spec.is_valid_k8s_name ("my_pod"))
+			assert_false ("invalid_start_hyphen", spec.is_valid_k8s_name ("-my-pod"))
+			assert_false ("invalid_end_hyphen", spec.is_valid_k8s_name ("my-pod-"))
+			assert_false ("invalid_empty", spec.is_valid_k8s_name (""))
+		end
+
+	test_pod_spec_to_json
+			-- Test JSON generation.
+		note
+			testing: "covers/{POD_SPEC}.to_json"
+		local
+			spec: POD_SPEC
+			l_json: STRING
+		do
+			create spec.make
+			spec := spec.set_name ("test-pod").set_image ("nginx")
+			l_json := spec.to_json
+			assert_true ("has_api_version", l_json.has_substring ("apiVersion"))
+			assert_true ("has_kind", l_json.has_substring ("Pod"))
+			assert_true ("has_name", l_json.has_substring ("test-pod"))
+			assert_true ("has_image", l_json.has_substring ("nginx"))
+		end
+
+	test_pod_spec_restart_policy
+			-- Test restart policy setting.
+		note
+			testing: "covers/{POD_SPEC}.set_restart_policy"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			spec := spec.set_restart_policy ("Never")
+			assert_strings_equal ("policy", "Never", spec.restart_policy)
+		end
+
+feature -- DEPLOYMENT_SPEC Tests
+
+	test_deployment_spec_make
+			-- Test deployment spec creation.
+		note
+			testing: "covers/{DEPLOYMENT_SPEC}.make"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			assert_strings_equal ("empty_name", "", spec.name)
+			assert_integers_equal ("default_replicas", 1, spec.replicas)
+			assert_strings_equal ("default_strategy", "RollingUpdate", spec.strategy)
+			assert_false ("not_valid", spec.is_valid)
+		end
+
+	test_deployment_spec_fluent_builder
+			-- Test deployment spec fluent builder.
+		note
+			testing: "covers/{DEPLOYMENT_SPEC}.set_name"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("api").set_image ("api:v2").set_replicas (3)
+			assert_strings_equal ("name", "api", spec.name)
+			assert_strings_equal ("image", "api:v2", spec.image)
+			assert_integers_equal ("replicas", 3, spec.replicas)
+			assert_true ("is_valid", spec.is_valid)
+			-- Auto-adds app label and selector
+			assert_true ("has_app_label", spec.labels.has ("app"))
+			assert_true ("has_app_selector", spec.selector.has ("app"))
+		end
+
+	test_deployment_spec_strategies
+			-- Test deployment strategies.
+		note
+			testing: "covers/{DEPLOYMENT_SPEC}.set_recreate"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			spec := spec.set_recreate
+			assert_strings_equal ("recreate", "Recreate", spec.strategy)
+			spec := spec.set_rolling_update
+			assert_strings_equal ("rolling", "RollingUpdate", spec.strategy)
+		end
+
+	test_deployment_spec_zero_replicas
+			-- Test zero replicas (scale to zero).
+		note
+			testing: "covers/{DEPLOYMENT_SPEC}.set_replicas"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("scaled-down").set_image ("app").set_replicas (0)
+			assert_integers_equal ("zero_replicas", 0, spec.replicas)
+			assert_true ("still_valid", spec.is_valid)
+		end
+
+	test_deployment_spec_to_json
+			-- Test JSON generation.
+		note
+			testing: "covers/{DEPLOYMENT_SPEC}.to_json"
+		local
+			spec: DEPLOYMENT_SPEC
+			l_json: STRING
+		do
+			create spec.make
+			spec := spec.set_name ("web").set_image ("nginx").set_replicas (2)
+			l_json := spec.to_json
+			assert_true ("has_apps_api", l_json.has_substring ("apps/v1"))
+			assert_true ("has_deployment", l_json.has_substring ("Deployment"))
+			assert_true ("has_replicas", l_json.has_substring ("replicas"))
+		end
+
+feature -- SERVICE_SPEC Tests
+
+	test_service_spec_make
+			-- Test service spec creation.
+		note
+			testing: "covers/{SERVICE_SPEC}.make"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			assert_strings_equal ("empty_name", "", spec.name)
+			assert_strings_equal ("default_type", "ClusterIP", spec.service_type)
+			assert_false ("not_valid", spec.is_valid)
+		end
+
+	test_service_spec_fluent_builder
+			-- Test service spec fluent builder.
+		note
+			testing: "covers/{SERVICE_SPEC}.set_name"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("api-svc").select_app ("api").add_simple_port (8080)
+			assert_strings_equal ("name", "api-svc", spec.name)
+			assert_true ("has_selector", spec.selector.has ("app"))
+			assert_integers_equal ("port_count", 1, spec.ports.count)
+			assert_true ("is_valid", spec.is_valid)
+		end
+
+	test_service_spec_types
+			-- Test service type settings.
+		note
+			testing: "covers/{SERVICE_SPEC}.set_node_port_type"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			spec := spec.set_cluster_ip_type
+			assert_strings_equal ("cluster_ip", "ClusterIP", spec.service_type)
+			spec := spec.set_node_port_type
+			assert_strings_equal ("node_port", "NodePort", spec.service_type)
+			spec := spec.set_load_balancer_type
+			assert_strings_equal ("load_balancer", "LoadBalancer", spec.service_type)
+		end
+
+	test_service_spec_external_name
+			-- Test ExternalName service.
+		note
+			testing: "covers/{SERVICE_SPEC}.set_external_name_type"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("external-db").set_external_name_type ("db.example.com")
+			assert_strings_equal ("type", "ExternalName", spec.service_type)
+			if attached spec.external_name as en then
+				assert_strings_equal ("external_name", "db.example.com", en)
+			end
+			assert_true ("valid_without_ports", spec.is_valid)
+		end
+
+	test_service_spec_to_json
+			-- Test JSON generation.
+		note
+			testing: "covers/{SERVICE_SPEC}.to_json"
+		local
+			spec: SERVICE_SPEC
+			l_json: STRING
+		do
+			create spec.make
+			spec := spec.set_name ("web-svc").select_app ("web").add_simple_port (80)
+			l_json := spec.to_json
+			assert_true ("has_api_version", l_json.has_substring ("apiVersion"))
+			assert_true ("has_service", l_json.has_substring ("Service"))
+			assert_true ("has_type", l_json.has_substring ("ClusterIP"))
+		end
+
+feature -- Edge Case Tests
+
+	test_malformed_json_pod
+			-- Test handling of malformed JSON in pod.
+		note
+			testing: "edge_case"
+		local
+			pod: K8S_POD
+		do
+			create pod.make_from_json ("not valid json at all")
+			assert_true ("has_parse_error", pod.has_parse_error)
+			assert_strings_equal ("fallback_name", "unknown", pod.name)
+		end
+
+	test_malformed_json_deployment
+			-- Test handling of malformed JSON in deployment.
+		note
+			testing: "edge_case"
+		local
+			dep: K8S_DEPLOYMENT
+		do
+			create dep.make_from_json ("{invalid")
+			assert_true ("has_parse_error", dep.has_parse_error)
+		end
+
+	test_malformed_json_service
+			-- Test handling of malformed JSON in service.
+		note
+			testing: "edge_case"
+		local
+			svc: K8S_SERVICE
+		do
+			create svc.make_from_json ("not valid json")
+			assert_true ("has_parse_error", svc.has_parse_error)
+		end
+
+	test_empty_metadata
+			-- Test pod with minimal/empty metadata.
+		note
+			testing: "edge_case"
+		local
+			pod: K8S_POD
+			l_json: STRING
+		do
+			l_json := "[
+				{%"metadata%": {}, %"status%": {}}
+			]"
+			create pod.make_from_json (l_json)
+			assert_strings_equal ("default_name", "unknown", pod.name)
+			assert_strings_equal ("default_namespace", "default", pod.namespace)
+		end
+
+	test_secret_base64_decoding
+			-- Test secret with base64 encoded data.
+		note
+			testing: "edge_case"
+		local
+			sec: K8S_SECRET
+			l_json: STRING
+		do
+			-- YWRtaW4= decodes to "admin"
+			l_json := "[
+				{
+					"type": "Opaque",
+					"metadata": {"name": "creds", "namespace": "default"},
+					"data": {"username": "YWRtaW4="}
+				}
+			]"
+			create sec.make_from_json (l_json)
+			-- Note: item() should return decoded value if implemented
+			assert_true ("has_username", sec.has_key ("username"))
+		end
+
 feature -- MANIFEST_BUILDER Tests
 
 	test_manifest_builder_make

@@ -214,7 +214,7 @@ feature {NONE} -- Implementation
 				if attached l_status.object_item ("loadBalancer") as lb then
 					if attached lb.array_item ("ingress") as ingress then
 						if ingress.count > 0 then
-							if attached ingress.object_at (1) as first_ingress then
+							if attached ingress.object_item (1) as first_ingress then
 								if attached first_ingress.string_item ("ip") as ip then
 									load_balancer_ip := ip.to_string_8
 									external_ip := ip.to_string_8
@@ -229,12 +229,19 @@ feature {NONE} -- Implementation
 		end
 
 	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+		local
+			l_keys: ARRAY [STRING_32]
+			i: INTEGER
+			l_key: STRING_32
 		do
 			if attached a_obj then
-				across a_obj.keys as k loop
-					if attached a_obj.string_item (k.item) as val then
-						a_map.put (val.to_string_8, k.item.to_string_8)
+				l_keys := a_obj.keys
+				from i := l_keys.lower until i > l_keys.upper loop
+					l_key := l_keys [i]
+					if attached a_obj.string_item (l_key) as l_val then
+						a_map.put (l_val.to_string_8, l_key.to_string_8)
 					end
+					i := i + 1
 				end
 			end
 		end
@@ -247,7 +254,7 @@ feature {NONE} -- Implementation
 		do
 			if attached a_arr then
 				from i := 1 until i > a_arr.count loop
-					if attached a_arr.object_at (i) as p then
+					if attached a_arr.object_item (i) as p then
 						l_name := ""
 						l_protocol := "TCP"
 						l_port := 0
@@ -275,7 +282,7 @@ feature {NONE} -- Implementation
 		do
 			if attached a_arr then
 				from i := 1 until i > a_arr.count loop
-					if attached a_arr.string_at (i) as ip then
+					if attached a_arr.string_item (i) as ip then
 						external_ips.extend (ip.to_string_8)
 						if i = 1 then
 							external_ip := ip.to_string_8
