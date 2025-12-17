@@ -13,12 +13,18 @@ feature {NONE} -- Initialization
 	make
 			-- Initialize authentication handler.
 		do
+			create api
 			create cached_token.make_empty
 		end
 
+feature -- Access
+
+	api: FOUNDATION_API
+			-- Foundation API for type anchoring.
+
 feature -- Operations
 
-	configure_http (a_http: SIMPLE_HTTP; a_config: K8S_CONFIG)
+	configure_http (a_http: like api.http; a_config: K8S_CONFIG)
 			-- Configure HTTP client with authentication from config.
 		require
 			http_not_void: a_http /= Void
@@ -68,6 +74,7 @@ feature {NONE} -- Implementation
 			-- Cached bearer token.
 
 invariant
+	api_not_void: api /= Void
 	cached_token_not_void: cached_token /= Void
 
 end

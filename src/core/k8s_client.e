@@ -16,8 +16,8 @@ feature {NONE} -- Initialization
 		local
 			l_config: K8S_CONFIG
 		do
+			create api
 			create l_config.make
-			-- Try in-cluster first, then kubeconfig
 			if l_config.is_in_cluster_environment then
 				create l_config.make_in_cluster
 			elseif attached l_config.default_config_path as l_path then
@@ -31,15 +31,18 @@ feature {NONE} -- Initialization
 		require
 			config_not_void: a_config /= Void
 		do
+			create api
 			config := a_config
-			create http.make
 			create auth.make
-			auth.configure_http (http, a_config)
+			auth.configure_http (api.http, a_config)
 		ensure
 			config_set: config = a_config
 		end
 
 feature -- Access
+
+	api: FOUNDATION_API
+			-- Foundation API for all operations.
 
 	config: K8S_CONFIG
 			-- Kubernetes configuration.
@@ -70,11 +73,11 @@ feature -- Pod Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/pods")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -90,11 +93,11 @@ feature -- Pod Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/pods/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -110,11 +113,11 @@ feature -- Pod Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_delete
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/pods/" + a_name)
-			l_response := http.delete (l_url)
+			l_response := api.http_delete (l_url)
 			if l_response.is_success then
 				Result := True
 			else
@@ -131,11 +134,11 @@ feature -- Pod Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_post
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_spec.namespace + "/pods")
-			l_response := http.post (l_url, a_spec.to_json)
+			l_response := api.http_post (l_url, a_spec.to_json)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -151,11 +154,11 @@ feature -- Pod Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/pods/" + a_name + "/log")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -172,11 +175,11 @@ feature -- Deployment Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_namespace + "/deployments")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -192,11 +195,11 @@ feature -- Deployment Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_namespace + "/deployments/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -214,12 +217,12 @@ feature -- Deployment Operations
 		local
 			l_url: STRING
 			l_body: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_patch
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_namespace + "/deployments/" + a_name + "/scale")
 			l_body := "{%"spec%":{%"replicas%":" + a_replicas.out + "}}"
-			l_response := http.patch (l_url, l_body)
+			l_response := api.http_patch (l_url, l_body)
 			if l_response.is_success then
 				Result := True
 			else
@@ -236,11 +239,11 @@ feature -- Deployment Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_post
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_spec.namespace + "/deployments")
-			l_response := http.post (l_url, a_spec.to_json)
+			l_response := api.http_post (l_url, a_spec.to_json)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -256,11 +259,11 @@ feature -- Deployment Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_delete
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_namespace + "/deployments/" + a_name)
-			l_response := http.delete (l_url)
+			l_response := api.http_delete (l_url)
 			if l_response.is_success then
 				Result := True
 			else
@@ -277,21 +280,20 @@ feature -- Deployment Creation
 		local
 			l_url: STRING
 			l_body: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_patch
 			l_timestamp: STRING
 		do
 			last_error := Void
 			l_url := api_url ("/apis/apps/v1/namespaces/" + a_namespace + "/deployments/" + a_name)
-			l_timestamp := (create {DATE_TIME}.make_now).out
+			l_timestamp := api.current_datetime.out
 			l_body := "{%"spec%":{%"template%":{%"metadata%":{%"annotations%":{%"kubectl.kubernetes.io/restartedAt%":%"" + l_timestamp + "%"}}}}}"
-			l_response := http.patch (l_url, l_body)
+			l_response := api.http_patch (l_url, l_body)
 			if l_response.is_success then
 				Result := True
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
 		end
-
 
 feature -- Service Operations
 
@@ -302,11 +304,11 @@ feature -- Service Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/services")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -322,11 +324,11 @@ feature -- Service Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/services/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -343,11 +345,11 @@ feature -- Service Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_post
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_spec.namespace + "/services")
-			l_response := http.post (l_url, a_spec.to_json)
+			l_response := api.http_post (l_url, a_spec.to_json)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -363,11 +365,11 @@ feature -- Service Creation
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_delete
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/services/" + a_name)
-			l_response := http.delete (l_url)
+			l_response := api.http_delete (l_url)
 			if l_response.is_success then
 				Result := True
 			else
@@ -383,11 +385,11 @@ feature -- Namespace Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -402,11 +404,11 @@ feature -- Namespace Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -423,11 +425,11 @@ feature -- ConfigMap Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/configmaps")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -443,11 +445,11 @@ feature -- ConfigMap Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/configmaps/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -464,11 +466,11 @@ feature -- Secret Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/secrets")
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -484,11 +486,11 @@ feature -- Secret Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url ("/api/v1/namespaces/" + a_namespace + "/secrets/" + a_name)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -505,11 +507,11 @@ feature -- Generic Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_get
 		do
 			last_error := Void
 			l_url := api_url (a_path)
-			l_response := http.get (l_url)
+			l_response := api.http_get (l_url)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -525,11 +527,11 @@ feature -- Generic Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_post
 		do
 			last_error := Void
 			l_url := api_url (a_path)
-			l_response := http.post (l_url, a_body)
+			l_response := api.http_post (l_url, a_body)
 			if l_response.is_success then
 				Result := l_response.body_string
 			else
@@ -544,11 +546,11 @@ feature -- Generic Operations
 			configured: is_configured
 		local
 			l_url: STRING
-			l_response: SIMPLE_HTTP_RESPONSE
+			l_response: like api.http_delete
 		do
 			last_error := Void
 			l_url := api_url (a_path)
-			l_response := http.delete (l_url)
+			l_response := api.http_delete (l_url)
 			if l_response.is_success then
 				Result := True
 			else
@@ -572,9 +574,6 @@ feature -- Error Access
 
 feature {NONE} -- Implementation
 
-	http: SIMPLE_HTTP
-			-- HTTP client.
-
 	auth: K8S_AUTH
 			-- Authentication handler.
 
@@ -589,8 +588,8 @@ feature {NONE} -- Implementation
 		end
 
 invariant
+	api_not_void: api /= Void
 	config_not_void: config /= Void
-	http_not_void: http /= Void
 	auth_not_void: auth /= Void
 
 end

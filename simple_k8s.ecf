@@ -22,8 +22,6 @@
 		</capability>
 		<library name="base" location="$ISE_LIBRARY\library\base\base.ecf"/>
 		<library name="simple_foundation_api" location="$SIMPLE_EIFFEL\simple_foundation_api\simple_foundation_api.ecf"/>
-		<library name="simple_http" location="$SIMPLE_EIFFEL\simple_http\simple_http.ecf"/>
-		<library name="time" location="$ISE_LIBRARY\library\time\time.ecf"/>
 		<cluster name="constants" location=".\src\constants\"/>
 		<cluster name="core" location=".\src\core\"/>
 		<cluster name="resources" location=".\src\resources\"/>
