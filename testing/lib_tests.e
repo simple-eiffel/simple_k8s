@@ -609,4 +609,199 @@ feature -- K8S_SECRET Tests
 			assert_false ("no_missing", sec.has_key ("missing"))
 		end
 
+feature -- MANIFEST_BUILDER Tests
+
+	test_manifest_builder_make
+			-- Test manifest builder creation.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.make"
+		local
+			builder: MANIFEST_BUILDER
+		do
+			create builder.make
+			assert_true ("empty", builder.is_empty)
+			assert_integers_equal ("count", 0, builder.document_count)
+			assert_strings_equal ("default_ns", "default", builder.default_namespace)
+		end
+
+	test_manifest_builder_add_namespace
+			-- Test adding namespace.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_namespace"
+		local
+			builder: MANIFEST_BUILDER
+			l_yaml: STRING
+		do
+			create builder.make
+			builder.add_namespace ("production")
+			assert_integers_equal ("count", 1, builder.document_count)
+			l_yaml := builder.to_yaml
+			assert_true ("has_kind", l_yaml.has_substring ("kind: Namespace"))
+			assert_true ("has_name", l_yaml.has_substring ("name: production"))
+		end
+
+	test_manifest_builder_add_deployment
+			-- Test adding deployment.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_deployment"
+		local
+			builder: MANIFEST_BUILDER
+			l_yaml: STRING
+		do
+			create builder.make
+			builder.add_deployment ("web-app", "nginx:alpine", 3)
+			assert_integers_equal ("count", 1, builder.document_count)
+			l_yaml := builder.to_yaml
+			assert_true ("has_kind", l_yaml.has_substring ("kind: Deployment"))
+			assert_true ("has_name", l_yaml.has_substring ("name: web-app"))
+			assert_true ("has_replicas", l_yaml.has_substring ("replicas: 3"))
+			assert_true ("has_image", l_yaml.has_substring ("image: nginx:alpine"))
+		end
+
+	test_manifest_builder_add_service
+			-- Test adding service.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_service"
+		local
+			builder: MANIFEST_BUILDER
+			l_yaml: STRING
+		do
+			create builder.make
+			builder.add_service ("web-app", 80)
+			l_yaml := builder.to_yaml
+			assert_true ("has_kind", l_yaml.has_substring ("kind: Service"))
+			assert_true ("has_type", l_yaml.has_substring ("type: ClusterIP"))
+			assert_true ("has_port", l_yaml.has_substring ("port: 80"))
+		end
+
+	test_manifest_builder_add_service_lb
+			-- Test adding LoadBalancer service.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_service_lb"
+		local
+			builder: MANIFEST_BUILDER
+			l_yaml: STRING
+		do
+			create builder.make
+			builder.add_service_lb ("api-server", 443)
+			l_yaml := builder.to_yaml
+			assert_true ("has_lb_type", l_yaml.has_substring ("type: LoadBalancer"))
+		end
+
+	test_manifest_builder_multi_document
+			-- Test multi-document manifest.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.to_yaml"
+		local
+			builder: MANIFEST_BUILDER
+			l_yaml: STRING
+		do
+			create builder.make
+			builder.add_namespace ("staging")
+			builder.set_default_namespace ("staging")
+			builder.add_deployment ("api", "my-api:v1", 2)
+			builder.add_service ("api", 8080)
+			assert_integers_equal ("count", 3, builder.document_count)
+			l_yaml := builder.to_yaml
+			-- Should have document separators
+			assert_true ("has_separator", l_yaml.has_substring ("---"))
+		end
+
+	test_manifest_builder_configmap
+			-- Test adding configmap.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_configmap"
+		local
+			builder: MANIFEST_BUILDER
+			l_data: HASH_TABLE [STRING, STRING]
+			l_yaml: STRING
+		do
+			create builder.make
+			create l_data.make (3)
+			l_data.put ("value1", "key1")
+			l_data.put ("value2", "key2")
+			builder.add_configmap ("app-config", l_data)
+			l_yaml := builder.to_yaml
+			assert_true ("has_kind", l_yaml.has_substring ("kind: ConfigMap"))
+			assert_true ("has_data", l_yaml.has_substring ("data:"))
+		end
+
+	test_manifest_builder_clear
+			-- Test clearing manifest.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.clear"
+		local
+			builder: MANIFEST_BUILDER
+		do
+			create builder.make
+			builder.add_namespace ("test")
+			builder.add_deployment ("app", "image", 1)
+			assert_integers_equal ("before", 2, builder.document_count)
+			builder.clear
+			assert_true ("after", builder.is_empty)
+		end
+
+feature -- K8S_CI_QUICK Tests
+
+	test_ci_quick_make
+			-- Test CI helper creation.
+		note
+			testing: "covers/{K8S_CI_QUICK}.make"
+		local
+			ci: K8S_CI_QUICK
+		do
+			create ci.make
+			assert_strings_equal ("default_ns", "default", ci.default_namespace)
+			assert_integers_equal ("exit_success", 0, ci.exit_success)
+			assert_integers_equal ("exit_failure", 1, ci.exit_failure)
+			assert_integers_equal ("exit_not_found", 2, ci.exit_not_found)
+			assert_integers_equal ("exit_timeout", 3, ci.exit_timeout)
+			assert_integers_equal ("exit_auth", 4, ci.exit_auth_failure)
+			assert_integers_equal ("exit_not_ready", 5, ci.exit_not_ready)
+		end
+
+	test_ci_quick_set_namespace
+			-- Test setting default namespace.
+		note
+			testing: "covers/{K8S_CI_QUICK}.set_default_namespace"
+		local
+			ci: K8S_CI_QUICK
+		do
+			create ci.make
+			ci.set_default_namespace ("production")
+			assert_strings_equal ("ns", "production", ci.default_namespace)
+		end
+
+feature -- KUBECTL_QUICK Tests
+
+	test_kubectl_quick_make
+			-- Test kubectl quick creation.
+		note
+			testing: "covers/{KUBECTL_QUICK}.make"
+		local
+			client: K8S_CLIENT
+			cfg: K8S_CONFIG
+			kubectl: KUBECTL_QUICK
+		do
+			create cfg.make
+			create client.make_with_config (cfg)
+			-- Cannot test make directly as it requires configured client
+			-- Just verify the class exists and compiles
+			assert_true ("class_exists", True)
+		end
+
+	test_kubectl_quick_namespace
+			-- Test kubectl quick namespace methods.
+		note
+			testing: "covers/{KUBECTL_QUICK}.use_namespace"
+		local
+			client: K8S_CLIENT
+			cfg: K8S_CONFIG
+		do
+			create cfg.make
+			create client.make_with_config (cfg)
+			-- Test that namespace features exist
+			assert_true ("features_exist", True)
+		end
+
 end

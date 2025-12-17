@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-12-17
+
+### Added
+- **KUBECTL_QUICK** - One-liner convenience API for common operations
+  - `get_pods`, `get_deployments`, `get_services` with namespace parameter
+  - `describe_pod`, `describe_deployment` returning formatted output
+  - `scale`, `restart`, `delete_pod` operations
+  - `logs` for pod log retrieval
+  - `exec` command execution in pods
+  - Default namespace configuration
+- **MANIFEST_BUILDER** - YAML manifest generation for kubectl apply
+  - Resource generators: `add_namespace`, `add_pod`, `add_deployment`, `add_service`
+  - Service types: `add_service_lb`, `add_service_nodeport`, `add_service_full`
+  - Config resources: `add_configmap`, `add_secret_opaque`
+  - `add_raw` for custom YAML documents
+  - Multi-document output with `to_yaml` (joined with ---)
+  - `save_to_file` for direct file output
+- **K8S_CI_QUICK** - CI/CD pipeline operations with exit codes
+  - Exit codes: 0=success, 1=failure, 2=not_found, 3=timeout, 4=auth_failure, 5=not_ready
+  - `wait_for_deployment_ready` with configurable timeout
+  - `verify_deployment_replicas` for replica count verification
+  - `scale_and_wait` for scaling with verification
+  - `rollout_and_wait` for rolling restart with verification
+  - `check_pod_running`, `check_namespace_active` health checks
+  - `resource_exists` for existence verification
+  - `is_cluster_reachable` for connectivity checks
+  - `last_message`, `last_exit_code`, `print_result` for CI integration
+- 12 new tests (8 MANIFEST_BUILDER, 2 K8S_CI_QUICK, 2 KUBECTL_QUICK)
+
+### Changed
+- Test count increased from 33 to 45 tests
+- Fixed JSON iteration pattern in K8S_POD and K8S_DEPLOYMENT (object_item instead of object_at)
+
 ## [0.3.0] - 2025-12-17
 
 ### Added

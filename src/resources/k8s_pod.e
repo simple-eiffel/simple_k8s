@@ -210,7 +210,7 @@ feature {NONE} -- Implementation
 			if attached l_spec then
 				l_containers := l_spec.array_item ("containers")
 				if attached l_containers and then l_containers.count > 0 then
-					if attached l_containers.object_at (1) as first_container then
+					if attached l_containers.object_item (1) as first_container then
 						if attached first_container.string_item ("image") as img then
 							image := img.to_string_8
 						end
@@ -237,12 +237,19 @@ feature {NONE} -- Implementation
 		end
 
 	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+		local
+			l_keys: ARRAY [STRING_32]
+			i: INTEGER
+			l_key: STRING_32
 		do
 			if attached a_obj then
-				across a_obj.keys as k loop
-					if attached a_obj.string_item (k.item) as val then
-						a_map.put (val.to_string_8, k.item.to_string_8)
+				l_keys := a_obj.keys
+				from i := l_keys.lower until i > l_keys.upper loop
+					l_key := l_keys [i]
+					if attached a_obj.string_item (l_key) as l_val then
+						a_map.put (l_val.to_string_8, l_key.to_string_8)
 					end
+					i := i + 1
 				end
 			end
 		end
@@ -256,7 +263,7 @@ feature {NONE} -- Implementation
 		do
 			if attached a_arr then
 				from i := 1 until i > a_arr.count loop
-					if attached a_arr.object_at (i) as cs then
+					if attached a_arr.object_item (i) as cs then
 						l_name := ""
 						l_state := "unknown"
 						l_ready := False

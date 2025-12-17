@@ -142,6 +142,104 @@
                 </table>
             </div>
         </section>
+
+        <section>
+            <h2>KUBECTL_QUICK</h2>
+            <p>One-liner convenience API for common kubectl-like operations.</p>
+
+            <div class="api-section">
+                <h3>Listing Operations</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>get_pods (a_namespace)</td><td>List pods in namespace</td></tr>
+                    <tr><td>get_deployments (a_namespace)</td><td>List deployments in namespace</td></tr>
+                    <tr><td>get_services (a_namespace)</td><td>List services in namespace</td></tr>
+                    <tr><td>get_configmaps (a_namespace)</td><td>List configmaps in namespace</td></tr>
+                    <tr><td>get_secrets (a_namespace)</td><td>List secrets in namespace</td></tr>
+                </table>
+            </div>
+
+            <div class="api-section">
+                <h3>Action Operations</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>scale (a_deployment, a_replicas)</td><td>Scale deployment</td></tr>
+                    <tr><td>restart (a_deployment)</td><td>Rolling restart</td></tr>
+                    <tr><td>delete_pod (a_name)</td><td>Delete specific pod</td></tr>
+                    <tr><td>logs (a_pod)</td><td>Get pod logs</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>MANIFEST_BUILDER</h2>
+            <p>YAML manifest generation for kubectl apply.</p>
+
+            <div class="api-section">
+                <h3>Resource Generators</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>add_namespace (a_name)</td><td>Add namespace resource</td></tr>
+                    <tr><td>add_pod (a_name, a_image)</td><td>Add simple pod</td></tr>
+                    <tr><td>add_deployment (a_name, a_image, a_replicas)</td><td>Add deployment</td></tr>
+                    <tr><td>add_service (a_name, a_port)</td><td>Add ClusterIP service</td></tr>
+                    <tr><td>add_service_lb (a_name, a_port)</td><td>Add LoadBalancer service</td></tr>
+                    <tr><td>add_service_nodeport (a_name, a_port, a_nodeport)</td><td>Add NodePort service</td></tr>
+                    <tr><td>add_configmap (a_name, a_data)</td><td>Add ConfigMap</td></tr>
+                    <tr><td>add_secret_opaque (a_name, a_data)</td><td>Add Opaque secret</td></tr>
+                </table>
+            </div>
+
+            <div class="api-section">
+                <h3>Output</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>to_yaml</td><td>Get combined YAML (documents joined with ---)</td></tr>
+                    <tr><td>save_to_file (a_path)</td><td>Save manifest to file</td></tr>
+                    <tr><td>document_count</td><td>Number of resources</td></tr>
+                    <tr><td>clear</td><td>Remove all documents</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>K8S_CI_QUICK</h2>
+            <p>CI/CD pipeline helper with exit codes for shell scripts.</p>
+
+            <div class="api-section">
+                <h3>Exit Codes</h3>
+                <table class="api-table">
+                    <tr><th>Code</th><th>Constant</th><th>Meaning</th></tr>
+                    <tr><td>0</td><td>exit_success</td><td>Operation succeeded</td></tr>
+                    <tr><td>1</td><td>exit_failure</td><td>General failure</td></tr>
+                    <tr><td>2</td><td>exit_not_found</td><td>Resource not found</td></tr>
+                    <tr><td>3</td><td>exit_timeout</td><td>Timeout waiting for condition</td></tr>
+                    <tr><td>4</td><td>exit_auth_failure</td><td>Authentication/authorization failure</td></tr>
+                    <tr><td>5</td><td>exit_not_ready</td><td>Resource not ready/healthy</td></tr>
+                </table>
+            </div>
+
+            <div class="api-section">
+                <h3>Wait Operations</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>wait_for_deployment_ready (name, ns, timeout)</td><td>Wait for deployment to be ready</td></tr>
+                    <tr><td>scale_and_wait (name, ns, replicas, timeout)</td><td>Scale and wait for ready</td></tr>
+                    <tr><td>rollout_and_wait (name, ns, timeout)</td><td>Restart and wait for ready</td></tr>
+                </table>
+            </div>
+
+            <div class="api-section">
+                <h3>Health Checks</h3>
+                <table class="api-table">
+                    <tr><th>Feature</th><th>Description</th></tr>
+                    <tr><td>check_pod_running (name, ns)</td><td>Check if pod is running</td></tr>
+                    <tr><td>check_namespace_active (name)</td><td>Check if namespace is active</td></tr>
+                    <tr><td>resource_exists (type, name, ns)</td><td>Check if resource exists</td></tr>
+                    <tr><td>is_cluster_reachable</td><td>Check cluster connectivity</td></tr>
+                </table>
+            </div>
+        </section>
     </main>
 
     <footer>

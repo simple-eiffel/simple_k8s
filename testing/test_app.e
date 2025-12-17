@@ -73,6 +73,24 @@ feature -- Execution
 			run_test (agent lib_tests.test_secret_keys, "test_secret_keys")
 			run_test (agent lib_tests.test_secret_data_access, "test_secret_data_access")
 
+			io.put_string ("%NMANIFEST_BUILDER Tests:%N")
+			run_test (agent lib_tests.test_manifest_builder_make, "test_manifest_builder_make")
+			run_test (agent lib_tests.test_manifest_builder_add_namespace, "test_manifest_builder_add_namespace")
+			run_test (agent lib_tests.test_manifest_builder_add_deployment, "test_manifest_builder_add_deployment")
+			run_test (agent lib_tests.test_manifest_builder_add_service, "test_manifest_builder_add_service")
+			run_test (agent lib_tests.test_manifest_builder_add_service_lb, "test_manifest_builder_add_service_lb")
+			run_test (agent lib_tests.test_manifest_builder_multi_document, "test_manifest_builder_multi_document")
+			run_test (agent lib_tests.test_manifest_builder_configmap, "test_manifest_builder_configmap")
+			run_test (agent lib_tests.test_manifest_builder_clear, "test_manifest_builder_clear")
+
+			io.put_string ("%NK8S_CI_QUICK Tests:%N")
+			run_test (agent lib_tests.test_ci_quick_make, "test_ci_quick_make")
+			run_test (agent lib_tests.test_ci_quick_set_namespace, "test_ci_quick_set_namespace")
+
+			io.put_string ("%NKUBECTL_QUICK Tests:%N")
+			run_test (agent lib_tests.test_kubectl_quick_make, "test_kubectl_quick_make")
+			run_test (agent lib_tests.test_kubectl_quick_namespace, "test_kubectl_quick_namespace")
+
 			io.put_string ("%N=== Results: " + passed.out + " passed, " + failed.out + " failed ===%N")
 			if failed > 0 then
 				io.put_string ("TESTS FAILED%N")

@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Eiffel](https://img.shields.io/badge/Eiffel-25.02-blue.svg)](https://www.eiffel.org/)
 [![Design by Contract](https://img.shields.io/badge/DbC-enforced-orange.svg)]()
-[![Tests](https://img.shields.io/badge/tests-33%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-45%20passing-brightgreen.svg)]()
 
 Kubernetes cluster orchestration library for Eiffel. Deploy, scale, and manage containerized workloads programmatically.
 
@@ -17,7 +17,7 @@ Part of the [Simple Eiffel](https://github.com/simple-eiffel) ecosystem.
 
 ## Status
 
-**Development** - 33 tests passing (v0.3.0)
+**Development** - 45 tests passing (v0.4.0)
 
 ## Overview
 
@@ -110,6 +110,9 @@ export SIMPLE_EIFFEL=/d/prod
 | `POD_SPEC` | Fluent builder for pod configuration |
 | `DEPLOYMENT_SPEC` | Fluent builder for deployment configuration |
 | `SERVICE_SPEC` | Fluent builder for service configuration |
+| `KUBECTL_QUICK` | One-liner convenience API for common operations |
+| `MANIFEST_BUILDER` | YAML manifest generation for kubectl apply |
+| `K8S_CI_QUICK` | CI/CD pipeline operations with exit codes |
 
 ## Building & Testing
 
@@ -132,7 +135,7 @@ cd /d/prod/simple_k8s
 ./EIFGENs/simple_k8s_tests/W_code/simple_k8s.exe
 ```
 
-**Test Results:** 33 tests passing
+**Test Results:** 45 tests passing
 
 ## Project Structure
 
@@ -156,9 +159,11 @@ simple_k8s/
 │   │   ├── deployment_spec.e     # Deployment builder
 │   │   └── service_spec.e        # Service builder
 │   └── util/
-│       └── kubectl_quick.e       # Convenience API (WIP)
+│       ├── kubectl_quick.e       # Convenience API
+│       ├── manifest_builder.e    # YAML manifest generation
+│       └── k8s_ci_quick.e        # CI/CD pipeline helper
 ├── testing/
-│   ├── lib_tests.e               # Test cases (33 tests)
+│   ├── lib_tests.e               # Test cases (45 tests)
 │   └── test_app.e                # Test runner
 ├── docs/                         # IUARC 5-doc standard
 ├── simple_k8s.ecf                # Library configuration
@@ -171,10 +176,11 @@ simple_k8s/
 - [x] Core client with kubeconfig parsing (v0.1)
 - [x] Pod, Deployment, Service operations (v0.2)
 - [x] Namespace, ConfigMap, Secret resources (v0.3)
-- [ ] KUBECTL_QUICK - One-liner convenience API
-- [ ] K8S_CI_QUICK - CI pipeline operations with exit codes
-- [ ] MANIFEST_BUILDER - YAML manifest generation
+- [x] KUBECTL_QUICK - One-liner convenience API (v0.4)
+- [x] K8S_CI_QUICK - CI pipeline operations with exit codes (v0.4)
+- [x] MANIFEST_BUILDER - YAML manifest generation (v0.4)
 - [ ] Watch/streaming operations
+- [ ] Ingress and NetworkPolicy resources
 
 ## License
 
