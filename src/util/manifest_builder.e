@@ -23,7 +23,7 @@ class
 	MANIFEST_BUILDER
 
 inherit
-	FOUNDATION_API
+	ANY
 		redefine
 			default_create
 		end
@@ -354,9 +354,11 @@ feature -- Output
 			-- Save manifest to file. Returns True on success.
 		require
 			path_not_empty: not a_path.is_empty
+		local
+			l_file: SIMPLE_FILE
 		do
-			write_file (a_path, to_yaml)
-			Result := file_exists (a_path)
+			create l_file.make (a_path)
+			Result := l_file.set_content (to_yaml)
 		end
 
 feature -- Clearing

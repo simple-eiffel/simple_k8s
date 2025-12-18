@@ -17,7 +17,7 @@ feature {NONE} -- Initialization
 			name_not_empty: not a_name.is_empty
 			namespace_not_empty: not a_namespace.is_empty
 		do
-			create api
+			create json.make
 			name := a_name
 			namespace := a_namespace
 			create labels.make (10)
@@ -33,9 +33,9 @@ feature {NONE} -- Initialization
 		require
 			json_not_empty: not a_json.is_empty
 		do
-			create api
-			if attached api.parse_json (a_json) as l_root then
-				parse_json (l_root.as_object)
+			create json.make
+			if attached json.parse_object (a_json) as l_root then
+				parse_json (l_root)
 			else
 				make ("unknown", "default")
 				has_parse_error := True
@@ -44,7 +44,7 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	api: FOUNDATION_API
+	json: SIMPLE_JSON_QUICK
 
 	name: STRING
 
@@ -135,11 +135,11 @@ feature -- Output
 
 feature {NONE} -- Implementation
 
-	parse_json (a_root: like api.new_json_object)
+	parse_json (a_root: SIMPLE_JSON_OBJECT)
 		local
-			l_metadata, l_spec, l_status: detachable like api.new_json_object
-			l_template, l_match_labels: detachable like api.new_json_object
-			l_containers: detachable like api.new_json_array
+			l_metadata, l_spec, l_status: detachable SIMPLE_JSON_OBJECT
+			l_template, l_match_labels: detachable SIMPLE_JSON_OBJECT
+			l_containers: detachable SIMPLE_JSON_ARRAY
 		do
 			name := "unknown"
 			namespace := "default"
@@ -206,7 +206,7 @@ feature {NONE} -- Implementation
 			end
 		end
 
-	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+	parse_string_map (a_obj: detachable SIMPLE_JSON_OBJECT; a_map: HASH_TABLE [STRING, STRING])
 		local
 			l_keys: ARRAY [STRING_32]
 			i: INTEGER
@@ -225,7 +225,7 @@ feature {NONE} -- Implementation
 		end
 
 invariant
-	api_not_void: api /= Void
+	json_not_void: json /= Void
 	name_not_void: name /= Void
 	namespace_not_void: namespace /= Void
 

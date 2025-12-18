@@ -17,7 +17,8 @@ feature {NONE} -- Initialization
 			name_not_empty: not a_name.is_empty
 			namespace_not_empty: not a_namespace.is_empty
 		do
-			create api
+			create json.make
+			create base64.make
 			name := a_name
 			namespace := a_namespace
 			secret_type := "Opaque"
@@ -35,9 +36,10 @@ feature {NONE} -- Initialization
 		require
 			json_not_empty: not a_json.is_empty
 		do
-			create api
-			if attached api.parse_json (a_json) as l_root then
-				parse_json (l_root.as_object)
+			create json.make
+			create base64.make
+			if attached json.parse_object (a_json) as l_root then
+				parse_json (l_root)
 			else
 				make ("unknown", "default")
 				has_parse_error := True
@@ -46,8 +48,11 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	api: FOUNDATION_API
-			-- Foundation API.
+	json: SIMPLE_JSON_QUICK
+			-- JSON parser.
+
+	base64: SIMPLE_BASE64
+			-- Base64 decoder.
 
 	name: STRING
 			-- Secret name.
@@ -90,7 +95,7 @@ feature -- Data Access
 			key_not_empty: not a_key.is_empty
 		do
 			if attached data.item (a_key) as b64 then
-				Result := api.base64_decode (b64)
+				Result := base64.decode (b64)
 			elseif attached string_data.item (a_key) as plain then
 				Result := plain
 			end
@@ -149,12 +154,12 @@ feature -- Type Queries
 
 feature {NONE} -- Parsing
 
-	parse_json (a_obj: like api.new_json_object)
+	parse_json (a_obj: SIMPLE_JSON_OBJECT)
 			-- Parse JSON object into secret fields.
 		require
 			obj_attached: a_obj /= Void
 		local
-			l_metadata: detachable like api.new_json_object
+			l_metadata: detachable SIMPLE_JSON_OBJECT
 		do
 			-- Initialize defaults
 			name := "unknown"
@@ -201,7 +206,7 @@ feature {NONE} -- Parsing
 			parse_string_map (a_obj.object_item ("stringData"), string_data)
 		end
 
-	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+	parse_string_map (a_obj: detachable SIMPLE_JSON_OBJECT; a_map: HASH_TABLE [STRING, STRING])
 			-- Parse JSON object into string map.
 		local
 			l_keys: ARRAY [STRING_32]

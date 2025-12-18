@@ -17,7 +17,7 @@ feature {NONE} -- Initialization
 			name_not_empty: not a_name.is_empty
 			namespace_not_empty: not a_namespace.is_empty
 		do
-			create api
+			create json.make
 			name := a_name
 			namespace := a_namespace
 			service_type := "ClusterIP"
@@ -36,9 +36,9 @@ feature {NONE} -- Initialization
 		require
 			json_not_empty: not a_json.is_empty
 		do
-			create api
-			if attached api.parse_json (a_json) as l_root then
-				parse_json (l_root.as_object)
+			create json.make
+			if attached json.parse_object (a_json) as l_root then
+				parse_json (l_root)
 			else
 				make ("unknown", "default")
 				has_parse_error := True
@@ -47,7 +47,7 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	api: FOUNDATION_API
+	json: SIMPLE_JSON_QUICK
 
 	name: STRING
 
@@ -159,9 +159,9 @@ feature -- Output
 
 feature {NONE} -- Implementation
 
-	parse_json (a_root: like api.new_json_object)
+	parse_json (a_root: SIMPLE_JSON_OBJECT)
 		local
-			l_metadata, l_spec, l_status: detachable like api.new_json_object
+			l_metadata, l_spec, l_status: detachable SIMPLE_JSON_OBJECT
 		do
 			name := "unknown"
 			namespace := "default"
@@ -228,7 +228,7 @@ feature {NONE} -- Implementation
 			end
 		end
 
-	parse_string_map (a_obj: detachable like api.new_json_object; a_map: HASH_TABLE [STRING, STRING])
+	parse_string_map (a_obj: detachable SIMPLE_JSON_OBJECT; a_map: HASH_TABLE [STRING, STRING])
 		local
 			l_keys: ARRAY [STRING_32]
 			i: INTEGER
@@ -246,7 +246,7 @@ feature {NONE} -- Implementation
 			end
 		end
 
-	parse_ports (a_arr: detachable like api.new_json_array)
+	parse_ports (a_arr: detachable SIMPLE_JSON_ARRAY)
 		local
 			i: INTEGER
 			l_name, l_protocol: STRING
@@ -276,7 +276,7 @@ feature {NONE} -- Implementation
 			end
 		end
 
-	parse_external_ips (a_arr: detachable like api.new_json_array)
+	parse_external_ips (a_arr: detachable SIMPLE_JSON_ARRAY)
 		local
 			i: INTEGER
 		do
@@ -294,7 +294,7 @@ feature {NONE} -- Implementation
 		end
 
 invariant
-	api_not_void: api /= Void
+	json_not_void: json /= Void
 	name_not_void: name /= Void
 	namespace_not_void: namespace /= Void
 	service_type_not_void: service_type /= Void

@@ -185,13 +185,13 @@ feature -- K8S_AUTH Tests
 		local
 			auth: K8S_AUTH
 			cfg: K8S_CONFIG
-			api: FOUNDATION_API
+			http: K8S_HTTP
 		do
 			create auth.make
 			create cfg.make
-			create api
+			create http.make
 			-- Should not crash
-			auth.configure_http (api.http, cfg)
+			auth.configure_http (http, cfg)
 			assert_true ("configured", True)
 		end
 
