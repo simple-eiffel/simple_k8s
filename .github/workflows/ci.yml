@@ -33,7 +33,7 @@ jobs:
         mkdir -p $SIMPLE_EIFFEL
         cd $SIMPLE_EIFFEL
         # All required dependencies for simple_k8s
-        DEPS="simple_base64 simple_decimal simple_json simple_yaml simple_toml simple_xml simple_compression simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_archive simple_config simple_app_api simple_ci simple_foundation_api simple_uuid simple_mmap simple_system simple_watcher"
+        DEPS="simple_base64 simple_decimal simple_json simple_yaml simple_toml simple_xml simple_compression simple_regex simple_csv simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_archive simple_config simple_app_api simple_ci simple_foundation_api simple_uuid simple_mmap simple_system simple_watcher"
         for lib in $DEPS; do
           if [ ! -d "$lib" ]; then
             echo "Cloning $lib..."
