@@ -36,7 +36,11 @@ jobs:
         # Comprehensive list of simple_* libraries from simple-eiffel org
         DEPS="simple_ai_client simple_alpine simple_app_api simple_archive simple_base64 simple_cache simple_ci simple_cli simple_clipboard simple_codec simple_compression simple_config simple_console simple_cors simple_csv simple_datetime simple_decimal simple_docker simple_eiffel_parser simple_encryption simple_env simple_file simple_foundation_api simple_fraction simple_graph simple_grpc simple_hash simple_htmx simple_html simple_http simple_i18n simple_ipc simple_json simple_jwt simple_logger simple_lsp simple_markdown simple_math simple_mmap simple_mongo simple_mq simple_pdf simple_platform_api simple_process simple_randomizer simple_rate_limiter simple_regex simple_scheduler simple_service_api simple_setup simple_smtp simple_sql simple_system simple_telemetry simple_template simple_testing simple_toml simple_uuid simple_validation simple_watcher simple_web simple_websocket simple_xml simple_yaml"
         for lib in $DEPS; do
-          if [ ! -d "$lib" ]; then
+          if [ -d "$lib" ]; then
+            echo "Updating $lib..."
+            cd "$lib" && git pull --ff-only 2>/dev/null || git fetch origin && git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || true
+            cd $SIMPLE_EIFFEL
+          else
             echo "Cloning $lib..."
             git clone --depth 1 https://github.com/simple-eiffel/$lib.git || true
           fi
@@ -45,16 +49,25 @@ jobs:
     - name: Pre-compile C libraries
       run: |
         cd $SIMPLE_EIFFEL
+        # Libraries with inline C code that need .o files for Linux
         for lib in simple_env simple_process simple_mmap simple_system simple_watcher; do
           if [ -d "$lib/Clib" ]; then
-            echo "Compiling $lib..."
+            echo "=== Compiling C code for $lib ==="
             cd "$lib/Clib"
+            # Remove stale .o files first
+            rm -f *.o
+            # Compile all .c files to .o
             for cfile in *.c; do
-              [ -f "$cfile" ] && gcc -c -fPIC "$cfile" -o "${cfile%.c}.o" 2>/dev/null || true
+              if [ -f "$cfile" ]; then
+                echo "  gcc -c -fPIC $cfile -o ${cfile%.c}.o"
+                gcc -c -fPIC "$cfile" -o "${cfile%.c}.o"
+              fi
             done
+            ls -la *.o 2>/dev/null || echo "  Warning: No .o files generated"
             cd $SIMPLE_EIFFEL
           fi
         done
+        echo "=== C library compilation complete ==="
 
     - name: Compile simple_k8s
       run: |
