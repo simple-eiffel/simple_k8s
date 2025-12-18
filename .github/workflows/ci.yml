@@ -7,6 +7,12 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+env:
+  ISE_EIFFEL: /usr/local/eiffel
+  ISE_PLATFORM: linux-x86-64
+  ISE_LIBRARY: /usr/local/eiffel
+  SIMPLE_EIFFEL: /opt/simple_eiffel
+
 jobs:
   build-and-test:
     runs-on: [self-hosted, eiffel]
@@ -18,11 +24,13 @@ jobs:
 
     - name: Verify EiffelStudio
       run: |
+        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
         echo "ISE_EIFFEL: $ISE_EIFFEL"
         ec -version
 
     - name: Setup dependencies
       run: |
+        mkdir -p $SIMPLE_EIFFEL
         cd $SIMPLE_EIFFEL
         for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_foundation_api; do
           if [ ! -d "$lib" ]; then
@@ -47,6 +55,7 @@ jobs:
 
     - name: Compile simple_k8s
       run: |
+        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
         cd $GITHUB_WORKSPACE
         rm -rf EIFGENs
         ec -batch -config simple_k8s.ecf -target simple_k8s_tests -c_compile
