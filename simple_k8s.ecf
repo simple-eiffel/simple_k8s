@@ -21,7 +21,6 @@
 			<void_safety support="all"/>
 		</capability>
 		<library name="base" location="$ISE_LIBRARY/library/base/base.ecf"/>
-		<library name="simple_foundation_api" location="$SIMPLE_EIFFEL/simple_foundation_api/simple_foundation_api.ecf"/>
 		<cluster name="core" location="./src/core/"/>
 		<cluster name="resources" location="./src/resources/"/>
 		<cluster name="specs" location="./src/specs/"/>
