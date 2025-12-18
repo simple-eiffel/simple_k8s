@@ -10,30 +10,56 @@ on:
 jobs:
   build-and-test:
     runs-on: [self-hosted, eiffel]
-    container:
-      image: eiffel/eiffel:latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Setup EiffelStudio
+      run: |
+        if command -v ec &> /dev/null; then
+          echo "EiffelStudio already installed"
+          ec -version
+        else
+          echo "Installing EiffelStudio..."
+          cd /tmp
+
+          # Download EiffelStudio 24.05
+          curl -L -o eiffelstudio.tar.bz2 \
+            "https://sourceforge.net/projects/eiffelstudio/files/EiffelStudio%2024.05/Build_108522/Eiffel_24.05_rev_108522-linux-x86-64.tar.bz2/download" \
+            || curl -L -o eiffelstudio.tar.bz2 \
+            "https://ftp.eiffel.com/pub/download/24.05/Eiffel_24.05_rev_108522-linux-x86-64.tar.bz2"
+
+          sudo mkdir -p /opt/eiffelstudio
+          sudo tar xjf eiffelstudio.tar.bz2 -C /opt/eiffelstudio --strip-components=1
+          rm eiffelstudio.tar.bz2
+
+          echo "ISE_EIFFEL=/opt/eiffelstudio" >> $GITHUB_ENV
+          echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
+          echo "/opt/eiffelstudio/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
+        fi
+
     - name: Verify EiffelStudio
       run: |
-        echo "ISE_EIFFEL: $ISE_EIFFEL"
+        export ISE_EIFFEL=${ISE_EIFFEL:-/opt/eiffelstudio}
+        export ISE_PLATFORM=linux-x86-64
+        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
         ec -version
 
-    - name: Setup SIMPLE_EIFFEL
+    - name: Setup dependencies
       run: |
-        mkdir -p /opt/simple_eiffel
-        echo "SIMPLE_EIFFEL=/opt/simple_eiffel" >> $GITHUB_ENV
+        export SIMPLE_EIFFEL=/opt/simple_eiffel
+        echo "SIMPLE_EIFFEL=$SIMPLE_EIFFEL" >> $GITHUB_ENV
+        sudo mkdir -p $SIMPLE_EIFFEL
+        sudo chown $(whoami) $SIMPLE_EIFFEL
 
-    - name: Clone dependencies
-      run: |
-        cd /opt/simple_eiffel
+        cd $SIMPLE_EIFFEL
         for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_foundation_api; do
-          echo "Cloning $lib..."
-          git clone --depth 1 https://github.com/simple-eiffel/$lib.git 2>/dev/null || echo "$lib already exists or failed"
+          if [ ! -d "$lib" ]; then
+            echo "Cloning $lib..."
+            git clone --depth 1 https://github.com/simple-eiffel/$lib.git || true
+          fi
         done
 
     - name: Pre-compile C libraries
@@ -41,7 +67,7 @@ jobs:
         cd /opt/simple_eiffel
         for lib in simple_env simple_process simple_mmap simple_system simple_watcher; do
           if [ -d "$lib/Clib" ]; then
-            echo "Compiling $lib C code..."
+            echo "Compiling $lib..."
             cd "$lib/Clib"
             for cfile in *.c; do
               [ -f "$cfile" ] && gcc -c -fPIC "$cfile" -o "${cfile%.c}.o" 2>/dev/null || true
@@ -52,26 +78,26 @@ jobs:
 
     - name: Compile simple_k8s
       run: |
+        export ISE_EIFFEL=${ISE_EIFFEL:-/opt/eiffelstudio}
+        export ISE_PLATFORM=linux-x86-64
+        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
+        export SIMPLE_EIFFEL=/opt/simple_eiffel
+
         cd $GITHUB_WORKSPACE
         rm -rf EIFGENs
-        export SIMPLE_EIFFEL=/opt/simple_eiffel
         ec -batch -config simple_k8s.ecf -target simple_k8s_tests -c_compile
       timeout-minutes: 20
 
     - name: Run tests
       run: |
         cd $GITHUB_WORKSPACE
-        EXECUTABLE=$(find EIFGENs -type f -executable -name "simple_k8s*" 2>/dev/null | head -1)
-        if [ -z "$EXECUTABLE" ]; then
-          EXECUTABLE=$(find EIFGENs -type f -name "*.exe" 2>/dev/null | head -1)
-        fi
+        EXECUTABLE=$(find EIFGENs -type f -executable 2>/dev/null | grep -v "\.o$" | head -1)
         if [ -n "$EXECUTABLE" ]; then
           echo "Running: $EXECUTABLE"
-          chmod +x "$EXECUTABLE"
           "$EXECUTABLE"
         else
           echo "ERROR: No executable found"
-          find EIFGENs -type f
+          find EIFGENs -type f | head -20
           exit 1
         fi
       timeout-minutes: 10
