@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-test:
     runs-on: [self-hosted, eiffel]
+    container:
+      image: eiffel/eiffel:latest
     timeout-minutes: 30
 
     steps:
@@ -21,34 +23,30 @@ jobs:
         echo "ISE_EIFFEL: $ISE_EIFFEL"
         ec -version
 
+    - name: Setup SIMPLE_EIFFEL
+      run: |
+        mkdir -p /opt/simple_eiffel
+        echo "SIMPLE_EIFFEL=/opt/simple_eiffel" >> $GITHUB_ENV
+
     - name: Clone dependencies
       run: |
-        cd $HOME
-        mkdir -p simple_eiffel
-        cd simple_eiffel
-
-        # Clone required dependencies if not present
+        cd /opt/simple_eiffel
         for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_foundation_api; do
-          if [ ! -d "$lib" ]; then
-            echo "Cloning $lib..."
-            git clone --depth 1 https://github.com/simple-eiffel/$lib.git || true
-          else
-            echo "$lib already present"
-          fi
+          echo "Cloning $lib..."
+          git clone --depth 1 https://github.com/simple-eiffel/$lib.git 2>/dev/null || echo "$lib already exists or failed"
         done
-
-    - name: Set SIMPLE_EIFFEL
-      run: echo "SIMPLE_EIFFEL=$HOME/simple_eiffel" >> $GITHUB_ENV
 
     - name: Pre-compile C libraries
       run: |
-        cd $HOME/simple_eiffel
-        for lib in simple_env simple_process; do
-          if [ -d "$lib/Clib" ] && [ -f "$lib/Clib/*.c" ]; then
+        cd /opt/simple_eiffel
+        for lib in simple_env simple_process simple_mmap simple_system simple_watcher; do
+          if [ -d "$lib/Clib" ]; then
             echo "Compiling $lib C code..."
             cd "$lib/Clib"
-            gcc -c -fPIC -o *.o *.c 2>/dev/null || true
-            cd $HOME/simple_eiffel
+            for cfile in *.c; do
+              [ -f "$cfile" ] && gcc -c -fPIC "$cfile" -o "${cfile%.c}.o" 2>/dev/null || true
+            done
+            cd /opt/simple_eiffel
           fi
         done
 
@@ -56,30 +54,24 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         rm -rf EIFGENs
+        export SIMPLE_EIFFEL=/opt/simple_eiffel
         ec -batch -config simple_k8s.ecf -target simple_k8s_tests -c_compile
       timeout-minutes: 20
 
     - name: Run tests
       run: |
         cd $GITHUB_WORKSPACE
-        EXECUTABLE=$(find EIFGENs -name "simple_k8s*" -type f -executable 2>/dev/null | head -1)
+        EXECUTABLE=$(find EIFGENs -type f -executable -name "simple_k8s*" 2>/dev/null | head -1)
+        if [ -z "$EXECUTABLE" ]; then
+          EXECUTABLE=$(find EIFGENs -type f -name "*.exe" 2>/dev/null | head -1)
+        fi
         if [ -n "$EXECUTABLE" ]; then
           echo "Running: $EXECUTABLE"
-          $EXECUTABLE
+          chmod +x "$EXECUTABLE"
+          "$EXECUTABLE"
         else
           echo "ERROR: No executable found"
-          find EIFGENs -type f -name "*.exe" -o -type f -executable
+          find EIFGENs -type f
           exit 1
         fi
       timeout-minutes: 10
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: |
-          EIFGENs/*/W_code/*.exe
-          EIFGENs/*/F_code/*.exe
-        retention-days: 7
-        if-no-files-found: ignore
