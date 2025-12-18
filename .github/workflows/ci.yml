@@ -32,7 +32,7 @@ jobs:
       run: |
         mkdir -p $SIMPLE_EIFFEL
         cd $SIMPLE_EIFFEL
-        for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_foundation_api; do
+        for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_archive simple_config simple_app_api simple_ci simple_foundation_api; do
           if [ ! -d "$lib" ]; then
             echo "Cloning $lib..."
             git clone --depth 1 https://github.com/simple-eiffel/$lib.git || true
