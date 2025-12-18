@@ -10,50 +10,19 @@ on:
 jobs:
   build-and-test:
     runs-on: [self-hosted, eiffel]
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup EiffelStudio
-      run: |
-        if command -v ec &> /dev/null; then
-          echo "EiffelStudio already installed"
-          ec -version
-        else
-          echo "Installing EiffelStudio..."
-          cd /tmp
-
-          # Download EiffelStudio 24.05
-          curl -L -o eiffelstudio.tar.bz2 \
-            "https://sourceforge.net/projects/eiffelstudio/files/EiffelStudio%2024.05/Build_108522/Eiffel_24.05_rev_108522-linux-x86-64.tar.bz2/download" \
-            || curl -L -o eiffelstudio.tar.bz2 \
-            "https://ftp.eiffel.com/pub/download/24.05/Eiffel_24.05_rev_108522-linux-x86-64.tar.bz2"
-
-          sudo mkdir -p /opt/eiffelstudio
-          sudo tar xjf eiffelstudio.tar.bz2 -C /opt/eiffelstudio --strip-components=1
-          rm eiffelstudio.tar.bz2
-
-          echo "ISE_EIFFEL=/opt/eiffelstudio" >> $GITHUB_ENV
-          echo "ISE_PLATFORM=linux-x86-64" >> $GITHUB_ENV
-          echo "/opt/eiffelstudio/studio/spec/linux-x86-64/bin" >> $GITHUB_PATH
-        fi
-
     - name: Verify EiffelStudio
       run: |
-        export ISE_EIFFEL=${ISE_EIFFEL:-/opt/eiffelstudio}
-        export ISE_PLATFORM=linux-x86-64
-        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
+        echo "ISE_EIFFEL: $ISE_EIFFEL"
         ec -version
 
     - name: Setup dependencies
       run: |
-        export SIMPLE_EIFFEL=/opt/simple_eiffel
-        echo "SIMPLE_EIFFEL=$SIMPLE_EIFFEL" >> $GITHUB_ENV
-        sudo mkdir -p $SIMPLE_EIFFEL
-        sudo chown $(whoami) $SIMPLE_EIFFEL
-
         cd $SIMPLE_EIFFEL
         for lib in simple_base64 simple_json simple_yaml simple_file simple_http simple_logger simple_testing simple_codec simple_env simple_process simple_datetime simple_foundation_api; do
           if [ ! -d "$lib" ]; then
@@ -64,7 +33,7 @@ jobs:
 
     - name: Pre-compile C libraries
       run: |
-        cd /opt/simple_eiffel
+        cd $SIMPLE_EIFFEL
         for lib in simple_env simple_process simple_mmap simple_system simple_watcher; do
           if [ -d "$lib/Clib" ]; then
             echo "Compiling $lib..."
@@ -72,17 +41,12 @@ jobs:
             for cfile in *.c; do
               [ -f "$cfile" ] && gcc -c -fPIC "$cfile" -o "${cfile%.c}.o" 2>/dev/null || true
             done
-            cd /opt/simple_eiffel
+            cd $SIMPLE_EIFFEL
           fi
         done
 
     - name: Compile simple_k8s
       run: |
-        export ISE_EIFFEL=${ISE_EIFFEL:-/opt/eiffelstudio}
-        export ISE_PLATFORM=linux-x86-64
-        export PATH="$ISE_EIFFEL/studio/spec/$ISE_PLATFORM/bin:$PATH"
-        export SIMPLE_EIFFEL=/opt/simple_eiffel
-
         cd $GITHUB_WORKSPACE
         rm -rf EIFGENs
         ec -batch -config simple_k8s.ecf -target simple_k8s_tests -c_compile
