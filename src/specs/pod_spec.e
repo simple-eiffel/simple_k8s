@@ -211,6 +211,11 @@ feature -- Fluent Builder: Optional
 			memory_request := a_mem_req
 			memory_limit := a_mem_lim
 			Result := Current
+		ensure
+			cpu_request_set: attached cpu_request as cr implies cr.same_string (a_cpu_req)
+			cpu_limit_set: attached cpu_limit as cl implies cl.same_string (a_cpu_lim)
+			memory_request_set: attached memory_request as mr implies mr.same_string (a_mem_req)
+			memory_limit_set: attached memory_limit as ml implies ml.same_string (a_mem_lim)
 		end
 
 	set_cpu (a_request, a_limit: STRING): like Current
@@ -219,6 +224,9 @@ feature -- Fluent Builder: Optional
 			cpu_request := a_request
 			cpu_limit := a_limit
 			Result := Current
+		ensure
+			request_set: attached cpu_request as cr implies cr.same_string (a_request)
+			limit_set: attached cpu_limit as cl implies cl.same_string (a_limit)
 		end
 
 	set_memory (a_request, a_limit: STRING): like Current
@@ -227,6 +235,9 @@ feature -- Fluent Builder: Optional
 			memory_request := a_request
 			memory_limit := a_limit
 			Result := Current
+		ensure
+			request_set: attached memory_request as mr implies mr.same_string (a_request)
+			limit_set: attached memory_limit as ml implies ml.same_string (a_limit)
 		end
 
 feature -- Direct Setters (non-fluent, for assign)
@@ -556,16 +567,9 @@ feature {NONE} -- JSON Helpers
 		end
 
 invariant
-	name_not_void: name /= Void
-	image_not_void: image /= Void
-	namespace_not_void: namespace /= Void
+	-- Domain invariants (void safety handles attached attributes)
 	restart_policy_valid: restart_policy.same_string ("Always") or
 	                      restart_policy.same_string ("OnFailure") or
 	                      restart_policy.same_string ("Never")
-	environment_not_void: environment /= Void
-	ports_not_void: ports /= Void
-	volumes_not_void: volumes /= Void
-	labels_not_void: labels /= Void
-	annotations_not_void: annotations /= Void
 
 end

@@ -1453,7 +1453,6 @@ feature -- KUBECTL_QUICK Tests
 		local
 			client: K8S_CLIENT
 			cfg: K8S_CONFIG
-			kubectl: KUBECTL_QUICK
 		do
 			create cfg.make
 			create client.make_with_config (cfg)
@@ -1476,6 +1475,163 @@ feature -- KUBECTL_QUICK Tests
 			assert_true ("features_exist", True)
 		end
 
+
+feature -- Edge Case Tests: Boundary Conditions (Testing Hat)
+
+	test_error_status_409_conflict
+			-- Test HTTP 409 Conflict error handling.
+		note
+			testing: "edge_case/http_status"
+		local
+			err: K8S_ERROR
+		do
+			create err.make_from_status (409, "{%"reason%":%"AlreadyExists%"}")
+			assert_integers_equal ("status", 409, err.http_status)
+			assert_false ("not_401", err.is_unauthorized)
+			assert_false ("not_404", err.is_not_found)
+			assert_true ("message_has_409", err.to_string.has_substring ("409"))
+		end
+
+	test_error_status_503_service_unavailable
+			-- Test HTTP 503 Service Unavailable error handling.
+		note
+			testing: "edge_case/http_status"
+		local
+			err: K8S_ERROR
+		do
+			create err.make_from_status (503, "Service Temporarily Unavailable")
+			assert_true ("is_server_error", err.is_server_error)
+		end
+
+	test_service_port_boundary_min
+			-- Test SERVICE_PORT at minimum valid port (1).
+		note
+			testing: "edge_case/boundary"
+		local
+			port: SERVICE_PORT
+		do
+			create port.make_simple (1)
+			assert_integers_equal ("port_min", 1, port.port)
+			assert_true ("is_valid", port.is_valid)
+		end
+
+	test_service_port_boundary_max
+			-- Test SERVICE_PORT at maximum valid port (65535).
+		note
+			testing: "edge_case/boundary"
+		local
+			port: SERVICE_PORT
+		do
+			create port.make_simple (65535)
+			assert_integers_equal ("port_max", 65535, port.port)
+			assert_true ("is_valid", port.is_valid)
+		end
+
+	test_config_from_nonexistent_file
+			-- Test K8S_CONFIG with file that doesn't exist.
+		note
+			testing: "edge_case/file_io"
+		local
+			cfg: K8S_CONFIG
+		do
+			create cfg.make_from_file ("/nonexistent/path/to/kubeconfig")
+			assert_true ("has_error", cfg.has_error)
+			assert_false ("not_valid", cfg.is_valid)
+			if attached cfg.last_error as err then
+				assert_true ("error_mentions_file", err.has_substring ("Cannot read"))
+			else
+				assert_true ("last_error_attached", False)
+			end
+		end
+
+	test_name_with_unicode_rejected
+			-- Test that Unicode characters in names are rejected.
+		note
+			testing: "edge_case/unicode"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			-- Emoji and Unicode should be rejected
+			assert_false ("emoji_invalid", spec.is_valid_k8s_name ("pod-🚀"))
+			assert_false ("unicode_invalid", spec.is_valid_k8s_name ("pod-αβγ"))
+			assert_false ("chinese_invalid", spec.is_valid_k8s_name ("pod-你好"))
+		end
+
+	test_service_port_nodeport_boundary
+			-- Test NodePort at boundary values (30000-32767).
+		note
+			testing: "edge_case/boundary"
+		local
+			port: SERVICE_PORT
+		do
+			create port.make_simple (80)
+			port := port.set_node_port (30000)
+			assert_true ("min_nodeport_valid", port.has_node_port)
+			assert_integers_equal ("min_nodeport", 30000, port.node_port)
+
+			port := port.set_node_port (32767)
+			assert_true ("max_nodeport_valid", port.has_node_port)
+			assert_integers_equal ("max_nodeport", 32767, port.node_port)
+		end
+
+	test_deployment_replicas_large_value
+			-- Test deployment with large replica count.
+		note
+			testing: "edge_case/boundary"
+		local
+			spec: DEPLOYMENT_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("large-scale").set_image ("nginx").set_replicas (1000)
+			assert_integers_equal ("large_replicas", 1000, spec.replicas)
+			assert_true ("still_valid", spec.is_valid)
+		end
+
+	test_pod_spec_empty_env_value
+			-- Test environment variable with empty value (valid in K8s).
+		note
+			testing: "edge_case/empty_values"
+		local
+			spec: POD_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("test").set_image ("nginx")
+			spec := spec.add_env ("EMPTY_VAR", "")
+			assert_true ("has_empty_env", spec.environment.has ("EMPTY_VAR"))
+			assert_true ("is_valid", spec.is_valid)
+		end
+
+	test_configmap_no_data
+			-- Test configmap with no data entries (valid edge case).
+		note
+			testing: "edge_case/empty_values"
+		local
+			cm: K8S_CONFIGMAP
+			l_json: STRING
+		do
+			l_json := "{%"metadata%": {%"name%": %"empty-config%", %"namespace%": %"default%"}, %"data%": {}}"
+			create cm.make_from_json (l_json)
+			assert_false ("no_parse_error", cm.has_parse_error)
+			assert_true ("data_empty", cm.data.is_empty)
+		end
+
+	test_service_headless
+			-- Test headless service creation (ClusterIP: None).
+		note
+			testing: "edge_case/service_types"
+		local
+			spec: SERVICE_SPEC
+		do
+			create spec.make
+			spec := spec.set_name ("headless-svc").set_headless.select_app ("db").add_simple_port (5432)
+			assert_strings_equal ("type", "ClusterIP", spec.service_type)
+			if attached spec.cluster_ip as cip then
+				assert_strings_equal ("none", "None", cip)
+			else
+				assert_true ("cluster_ip_attached", False)
+			end
+		end
 
 feature -- Security Tests: K8s Name Validation
 

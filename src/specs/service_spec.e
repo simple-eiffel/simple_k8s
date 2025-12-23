@@ -139,6 +139,9 @@ feature -- Fluent Builder: Service Type
 			service_type := "ClusterIP"
 			cluster_ip := "None"
 			Result := Current
+		ensure
+			type_set: service_type.same_string ("ClusterIP")
+			headless: attached cluster_ip as cip and then cip.same_string ("None")
 		end
 
 feature -- Fluent Builder: Configuration
@@ -228,6 +231,8 @@ feature -- Fluent Builder: Configuration
 		do
 			load_balancer_ip := a_ip
 			Result := Current
+		ensure
+			ip_set: attached load_balancer_ip as lbip and then lbip.same_string (a_ip)
 		end
 
 	set_session_affinity_none: like Current
@@ -235,6 +240,8 @@ feature -- Fluent Builder: Configuration
 		do
 			session_affinity := "None"
 			Result := Current
+		ensure
+			affinity_set: attached session_affinity as sa and then sa.same_string ("None")
 		end
 
 	set_session_affinity_client_ip: like Current
@@ -242,6 +249,8 @@ feature -- Fluent Builder: Configuration
 		do
 			session_affinity := "ClientIP"
 			Result := Current
+		ensure
+			affinity_set: attached session_affinity as sa and then sa.same_string ("ClientIP")
 		end
 
 feature -- Direct Setters (non-fluent, for assign)
@@ -424,15 +433,10 @@ feature {NONE} -- JSON Helpers
 		end
 
 invariant
-	name_not_void: name /= Void
-	namespace_not_void: namespace /= Void
+	-- Domain invariants (void safety handles attached attributes)
 	service_type_valid: service_type.same_string ("ClusterIP") or
 	                    service_type.same_string ("NodePort") or
 	                    service_type.same_string ("LoadBalancer") or
 	                    service_type.same_string ("ExternalName")
-	selector_not_void: selector /= Void
-	ports_not_void: ports /= Void
-	labels_not_void: labels /= Void
-	annotations_not_void: annotations /= Void
 
 end

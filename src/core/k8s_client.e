@@ -28,8 +28,6 @@ feature {NONE} -- Initialization
 
 	make_with_config (a_config: K8S_CONFIG)
 			-- Create client with specified config.
-		require
-			config_not_void: a_config /= Void
 		do
 			create http.make
 			config := a_config
@@ -83,6 +81,9 @@ feature -- Pod Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_pod (a_name, a_namespace: STRING): detachable STRING
@@ -103,6 +104,9 @@ feature -- Pod Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	delete_pod (a_name, a_namespace: STRING): BOOLEAN
@@ -123,6 +127,8 @@ feature -- Pod Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 feature -- Pod Creation
@@ -144,6 +150,9 @@ feature -- Pod Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	pod_logs (a_name, a_namespace: STRING): detachable STRING
@@ -164,6 +173,9 @@ feature -- Pod Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 feature -- Deployment Operations
@@ -185,6 +197,9 @@ feature -- Deployment Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_deployment (a_name, a_namespace: STRING): detachable STRING
@@ -205,6 +220,9 @@ feature -- Deployment Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	scale_deployment (a_name, a_namespace: STRING; a_replicas: INTEGER): BOOLEAN
@@ -228,6 +246,8 @@ feature -- Deployment Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 feature -- Deployment Creation
@@ -249,6 +269,9 @@ feature -- Deployment Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	delete_deployment (a_name, a_namespace: STRING): BOOLEAN
@@ -269,6 +292,8 @@ feature -- Deployment Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 	rollout_restart (a_name, a_namespace: STRING): BOOLEAN
@@ -293,6 +318,8 @@ feature -- Deployment Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 feature -- Service Operations
@@ -314,6 +341,9 @@ feature -- Service Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_service (a_name, a_namespace: STRING): detachable STRING
@@ -334,6 +364,9 @@ feature -- Service Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 feature -- Service Creation
@@ -355,6 +388,9 @@ feature -- Service Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	delete_service (a_name, a_namespace: STRING): BOOLEAN
@@ -375,6 +411,8 @@ feature -- Service Creation
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 feature -- Namespace Operations
@@ -395,6 +433,9 @@ feature -- Namespace Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_namespace (a_name: STRING): detachable STRING
@@ -414,6 +455,9 @@ feature -- Namespace Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 feature -- ConfigMap Operations
@@ -435,6 +479,9 @@ feature -- ConfigMap Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_configmap (a_name, a_namespace: STRING): detachable STRING
@@ -455,6 +502,9 @@ feature -- ConfigMap Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 feature -- Secret Operations
@@ -476,6 +526,9 @@ feature -- Secret Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	get_secret (a_name, a_namespace: STRING): detachable STRING
@@ -496,6 +549,9 @@ feature -- Secret Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 feature -- Generic Operations
@@ -517,13 +573,15 @@ feature -- Generic Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	post_resource (a_path, a_body: STRING): detachable STRING
 			-- Generic POST for any API path. Returns JSON string.
 		require
 			path_not_empty: not a_path.is_empty
-			body_not_void: a_body /= Void
 			configured: is_configured
 		local
 			l_url: STRING
@@ -537,6 +595,9 @@ feature -- Generic Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_means_result: not has_error implies Result /= Void
+			failure_means_no_result: has_error implies Result = Void
 		end
 
 	delete_resource (a_path: STRING): BOOLEAN
@@ -556,6 +617,8 @@ feature -- Generic Operations
 			else
 				create last_error.make_from_status (l_response.status, l_response.body_string)
 			end
+		ensure
+			success_consistency: Result = not has_error
 		end
 
 feature -- Error Access
@@ -588,8 +651,7 @@ feature {NONE} -- Implementation
 		end
 
 invariant
-	http_not_void: http /= Void
-	config_not_void: config /= Void
-	auth_not_void: auth /= Void
+	-- Domain invariants (not trivial void checks - void safety handles those)
+	error_consistency: has_error = (last_error /= Void)
 
 end

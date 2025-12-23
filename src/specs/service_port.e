@@ -90,6 +90,8 @@ feature -- Fluent Builder
 		do
 			protocol := "TCP"
 			Result := Current
+		ensure
+			protocol_set: protocol.same_string ("TCP")
 		end
 
 	set_udp: like Current
@@ -97,6 +99,8 @@ feature -- Fluent Builder
 		do
 			protocol := "UDP"
 			Result := Current
+		ensure
+			protocol_set: protocol.same_string ("UDP")
 		end
 
 	set_node_port (a_node_port: INTEGER): like Current
@@ -150,9 +154,10 @@ feature -- Output
 		end
 
 invariant
-	name_not_void: name /= Void
+	-- Domain invariants (void safety handles attached attributes)
 	port_valid: port > 0 and port <= 65535
 	target_port_valid: target_port > 0 and target_port <= 65535
 	protocol_valid: protocol.same_string ("TCP") or protocol.same_string ("UDP")
+	node_port_valid: node_port = 0 or (node_port >= 30000 and node_port <= 32767)
 
 end

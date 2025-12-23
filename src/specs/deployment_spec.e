@@ -174,6 +174,10 @@ feature -- Fluent Builder: Deployment Config
 			max_unavailable := a_max_unavailable
 			max_surge := a_max_surge
 			Result := Current
+		ensure
+			strategy_set: strategy.same_string ("RollingUpdate")
+			max_unavailable_set: max_unavailable.same_string (a_max_unavailable)
+			max_surge_set: max_surge.same_string (a_max_surge)
 		end
 
 feature -- Fluent Builder: Container Config
@@ -259,6 +263,11 @@ feature -- Fluent Builder: Container Config
 			memory_request := a_mem_req
 			memory_limit := a_mem_lim
 			Result := Current
+		ensure
+			cpu_request_set: attached cpu_request as cr implies cr.same_string (a_cpu_req)
+			cpu_limit_set: attached cpu_limit as cl implies cl.same_string (a_cpu_lim)
+			memory_request_set: attached memory_request as mr implies mr.same_string (a_mem_req)
+			memory_limit_set: attached memory_limit as ml implies ml.same_string (a_mem_lim)
 		end
 
 	set_cpu (a_request, a_limit: STRING): like Current
@@ -267,6 +276,9 @@ feature -- Fluent Builder: Container Config
 			cpu_request := a_request
 			cpu_limit := a_limit
 			Result := Current
+		ensure
+			request_set: attached cpu_request as cr implies cr.same_string (a_request)
+			limit_set: attached cpu_limit as cl implies cl.same_string (a_limit)
 		end
 
 	set_memory (a_request, a_limit: STRING): like Current
@@ -275,6 +287,9 @@ feature -- Fluent Builder: Container Config
 			memory_request := a_request
 			memory_limit := a_limit
 			Result := Current
+		ensure
+			request_set: attached memory_request as mr implies mr.same_string (a_request)
+			limit_set: attached memory_limit as ml implies ml.same_string (a_limit)
 		end
 
 feature -- Direct Setters (non-fluent, for assign)
@@ -577,15 +592,8 @@ feature {NONE} -- JSON Helpers
 		end
 
 invariant
-	name_not_void: name /= Void
-	image_not_void: image /= Void
-	namespace_not_void: namespace /= Void
+	-- Domain invariants (void safety handles attached attributes)
 	replicas_non_negative: replicas >= 0
 	strategy_valid: strategy.same_string ("RollingUpdate") or strategy.same_string ("Recreate")
-	environment_not_void: environment /= Void
-	ports_not_void: ports /= Void
-	labels_not_void: labels /= Void
-	selector_not_void: selector /= Void
-	annotations_not_void: annotations /= Void
 
 end

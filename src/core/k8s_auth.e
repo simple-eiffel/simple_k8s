@@ -14,15 +14,14 @@ feature {NONE} -- Initialization
 			-- Initialize authentication handler.
 		do
 			create cached_token.make_empty
+		ensure
+			no_token: not has_token
 		end
 
 feature -- Operations
 
 	configure_http (a_http: K8S_HTTP; a_config: K8S_CONFIG)
 			-- Configure HTTP client with authentication from config.
-		require
-			http_not_void: a_http /= Void
-			config_not_void: a_config /= Void
 		do
 			-- Configure authentication based on config
 			if attached a_config.bearer_token as l_token and then not l_token.is_empty then
@@ -56,6 +55,8 @@ feature -- Query
 			-- Is a token available?
 		do
 			Result := not cached_token.is_empty
+		ensure
+			definition: Result = not cached_token.is_empty
 		end
 
 feature {NONE} -- Implementation
@@ -64,6 +65,7 @@ feature {NONE} -- Implementation
 			-- Cached bearer token.
 
 invariant
-	cached_token_not_void: cached_token /= Void
+	-- Domain invariants (void safety handles attached attributes)
+	token_consistency: has_token = not cached_token.is_empty
 
 end

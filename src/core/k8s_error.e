@@ -24,8 +24,6 @@ feature {NONE} -- Initialization
 
 	make_from_status (a_status: INTEGER; a_body: STRING)
 			-- Create from HTTP status and response body.
-		require
-			body_not_void: a_body /= Void
 		do
 			http_status := a_status
 			if a_status = 401 then
@@ -97,10 +95,13 @@ feature -- Output
 				Result := message
 			end
 		ensure
-			result_not_void: Result /= Void
+			not_empty: not Result.is_empty
 		end
 
 invariant
-	message_not_void: message /= Void
+	-- Domain invariants
+	status_consistency: is_unauthorized implies http_status = 401
+	forbidden_consistency: is_forbidden implies http_status = 403
+	not_found_consistency: is_not_found implies http_status = 404
 
 end

@@ -19,6 +19,10 @@ feature {NONE} -- Initialization
 			create yaml.make
 			api_server := ""
 			current_namespace := "default"
+		ensure
+			not_valid: not is_valid
+			default_namespace: current_namespace.same_string ("default")
+			no_error: not has_error
 		end
 
 	make_from_file (a_path: STRING)
@@ -45,6 +49,9 @@ feature {NONE} -- Initialization
 			else
 				last_error := "Cannot read file: " + a_path
 			end
+		ensure
+			valid_xor_error: is_valid xor has_error
+			not_in_cluster: not is_in_cluster
 		end
 
 	make_in_cluster
@@ -71,6 +78,9 @@ feature {NONE} -- Initialization
 			if l_ns_file.exists then
 				current_namespace := l_ns_file.content.to_string_8
 			end
+		ensure
+			in_cluster_mode: is_in_cluster
+			cluster_api_server: api_server.same_string ("https://kubernetes.default.svc")
 		end
 
 feature -- Access
@@ -230,9 +240,9 @@ feature {NONE} -- Implementation
 		end
 
 invariant
-	namespace_not_void: current_namespace /= Void
-	api_server_not_void: api_server /= Void
-	env_not_void: env /= Void
-	yaml_not_void: yaml /= Void
+	-- Domain invariants (void safety handles attached attributes)
+	error_consistency: has_error = (last_error /= Void)
+	validity_requires_server: is_valid implies not api_server.is_empty
+	validity_excludes_error: is_valid implies not has_error
 
 end
