@@ -1281,6 +1281,87 @@ feature -- Edge Case Tests
 			assert_true ("has_username", sec.has_key ("username"))
 		end
 
+feature -- MANIFEST_BUILDER add_json Tests
+
+	test_manifest_builder_add_json_deployment
+			-- A deployment spec added as JSON comes out as real block YAML that re-parses with types intact.
+		note
+			testing: "covers/{MANIFEST_BUILDER}.add_json"
+		local
+			spec: DEPLOYMENT_SPEC
+			builder: MANIFEST_BUILDER
+			yaml: SIMPLE_YAML
+			l_text: STRING
+			l_lines: LIST [STRING]
+			l_trimmed: STRING
+			l_found_env: BOOLEAN
+			i: INTEGER
+		do
+			create spec.make
+			spec := spec.set_name ("web").set_image ("nginx:alpine").set_replicas (3)
+			spec := spec.add_label ("tier", "frontend").add_env ("PORT", "8080").add_port ("http", 8080)
+			create builder.make
+			assert_true ("is_json_object", builder.is_json_object (spec.to_json))
+			assert_false ("garbage_not_object", builder.is_json_object ("not json"))
+			assert_false ("array_not_object", builder.is_json_object ("[1,2]"))
+			builder.add_json (spec.to_json)
+			assert_integers_equal ("one_document", 1, builder.document_count)
+			l_text := builder.to_yaml
+			print ("%N--- YAML produced (first 14 lines) ---%N")
+			l_lines := l_text.split ('%N')
+			from i := 1 until i > l_lines.count.min (14) loop
+				print (l_lines [i] + "%N")
+				i := i + 1
+			end
+			print ("---%N")
+			assert_true ("api_version", l_text.has_substring ("apiVersion: apps/v1"))
+			assert_true ("kind", l_text.has_substring ("kind: Deployment"))
+			from i := 1 until i > l_lines.count loop
+				l_trimmed := l_lines [i].twin
+				l_trimmed.left_adjust
+				assert_false ("no_json_line: " + l_lines [i], not l_trimmed.is_empty and then l_trimmed [1] = '{')
+				i := i + 1
+			end
+			create yaml.make
+			if attached yaml.parse (l_text) as l_root and then l_root.is_mapping then
+				if attached l_root.as_mapping.item ("kind") as l_kind then
+					assert_true ("kind_value", l_kind.is_string and then l_kind.as_string.same_string ("Deployment"))
+				else
+					assert_true ("kind_missing", False)
+				end
+				if attached l_root.as_mapping.item ("spec") as l_spec and then l_spec.is_mapping then
+					if attached l_spec.as_mapping.item ("replicas") as l_rep then
+						assert_true ("replicas_is_integer", l_rep.is_integer)
+					else
+						assert_true ("replicas_missing", False)
+					end
+				else
+					assert_true ("spec_missing", False)
+				end
+				l_found_env := env_value_is_string (l_root, "8080")
+				assert_true ("env_value_still_string", l_found_env)
+			else
+				assert_true ("reparse_failed: " + yaml.errors_as_string.to_string_8, False)
+			end
+		end
+
+feature {NONE} -- add_json helpers
+
+	env_value_is_string (a_root: YAML_VALUE; a_expected: STRING_32): BOOLEAN
+			-- Does spec.template.spec.containers[1].env[1].value parse as the YAML_STRING `a_expected'?
+		do
+			if attached a_root.as_mapping.item ("spec") as l_spec and then
+				attached l_spec.as_mapping.item ("template") as l_tpl and then
+				attached l_tpl.as_mapping.item ("spec") as l_pod and then
+				attached l_pod.as_mapping.item ("containers") as l_cs and then l_cs.is_sequence and then
+				l_cs.as_sequence.count >= 1 and then
+				attached l_cs.as_sequence.item (1).as_mapping.item ("env") as l_env and then l_env.is_sequence and then
+				l_env.as_sequence.count >= 1 and then
+				attached l_env.as_sequence.item (1).as_mapping.item ("value") as l_val then
+				Result := l_val.is_string and then l_val.as_string.same_string (a_expected)
+			end
+		end
+
 feature -- MANIFEST_BUILDER Tests
 
 	test_manifest_builder_make

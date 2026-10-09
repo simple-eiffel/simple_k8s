@@ -145,6 +145,7 @@ feature -- Execution
 			run_test (agent lib_tests.test_manifest_builder_multi_document, "test_manifest_builder_multi_document")
 			run_test (agent lib_tests.test_manifest_builder_configmap, "test_manifest_builder_configmap")
 			run_test (agent lib_tests.test_manifest_builder_clear, "test_manifest_builder_clear")
+			run_test (agent lib_tests.test_manifest_builder_add_json_deployment, "test_manifest_builder_add_json_deployment")
 
 			io.put_string ("%NK8S_CI_QUICK Tests:%N")
 			run_test (agent lib_tests.test_ci_quick_make, "test_ci_quick_make")

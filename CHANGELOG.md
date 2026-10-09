@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased] - 2026-10-08
+
+### Added
+- `MANIFEST_BUILDER.add_json` / `is_json_object`: add a resource given as a JSON object, converted to real block-style YAML via simple_yaml (key order preserved; strings such as `"8080"` stay strings). `add_raw` is unchanged and documented as verbatim.
+
 ## [0.5.0] - 2025-12-17
 
 ### Added

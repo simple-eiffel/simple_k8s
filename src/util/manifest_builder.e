@@ -319,11 +319,48 @@ feature -- Secret
 feature -- Raw YAML
 
 	add_raw (a_yaml: STRING)
-			-- Add raw YAML document.
+			-- Add a pre-rendered document verbatim (no validation or conversion).
+			-- Pass YAML text; JSON text is emitted as-is (use `add_json' to convert it).
 		require
 			not_empty: not a_yaml.is_empty
 		do
 			documents.extend (a_yaml)
+		ensure
+			added: document_count = old document_count + 1
+		end
+
+feature -- JSON resources
+
+	is_json_object (a_json: STRING): BOOLEAN
+			-- Is `a_json' well-formed JSON whose top-level value is an object?
+		local
+			l_parser: SIMPLE_JSON
+		do
+			if not a_json.is_empty then
+				create l_parser
+				if attached l_parser.parse (utf8_to_string_32 (a_json)) as l_value then
+					Result := l_value.is_object
+				end
+			end
+		end
+
+	add_json (a_json: STRING)
+			-- Add a resource given as a JSON object, converted to block-style YAML.
+		require
+			is_object: is_json_object (a_json)
+		local
+			l_parser: SIMPLE_JSON
+			l_yaml: SIMPLE_YAML
+			l_text: STRING_32
+		do
+			create l_parser
+			create l_yaml.make
+			if attached l_parser.parse (utf8_to_string_32 (a_json)) as l_value then
+				l_text := l_yaml.to_yaml (to_yaml_value (l_value))
+			else
+				create l_text.make_empty
+			end
+			documents.extend ((create {UTF_CONVERTER}).string_32_to_utf_8_string_8 (l_text))
 		ensure
 			added: document_count = old document_count + 1
 		end
@@ -369,6 +406,58 @@ feature -- Clearing
 			documents.wipe_out
 		ensure
 			empty: is_empty
+		end
+
+feature {NONE} -- JSON conversion
+
+	utf8_to_string_32 (a_text: STRING): STRING_32
+			-- `a_text' (UTF-8 bytes) as Unicode.
+		do
+			Result := (create {UTF_CONVERTER}).utf_8_string_8_to_string_32 (a_text)
+		end
+
+	to_yaml_value (a_value: SIMPLE_JSON_VALUE): YAML_VALUE
+			-- JSON tree `a_value' as a YAML tree (object key order preserved).
+		local
+			l_map: YAML_MAPPING
+			l_seq: YAML_SEQUENCE
+			l_object: SIMPLE_JSON_OBJECT
+			l_array: SIMPLE_JSON_ARRAY
+			l_keys: ARRAY [STRING_32]
+			i: INTEGER
+		do
+			if a_value.is_object then
+				create l_map.make
+				l_object := a_value.as_object
+				l_keys := l_object.keys
+				from i := l_keys.lower until i > l_keys.upper loop
+					if attached l_object.item (l_keys [i]) as l_child then
+						l_map.put (to_yaml_value (l_child), l_keys [i])
+					end
+					i := i + 1
+				end
+				Result := l_map
+			elseif a_value.is_array then
+				create l_seq.make
+				l_array := a_value.as_array
+				from i := 1 until i > l_array.count loop
+					l_seq.extend (to_yaml_value (l_array.item (i)))
+					i := i + 1
+				end
+				Result := l_seq
+			elseif a_value.is_string then
+				create {YAML_STRING} Result.make (a_value.as_string_32)
+			elseif a_value.is_boolean then
+				create {YAML_BOOLEAN} Result.make (a_value.as_boolean)
+			elseif a_value.is_integer then
+				create {YAML_INTEGER} Result.make (a_value.as_integer)
+			elseif a_value.is_number then
+				create {YAML_FLOAT} Result.make (a_value.as_real)
+			else
+				create {YAML_NULL} Result.make
+			end
+		ensure
+			result_exists: Result /= Void
 		end
 
 feature {NONE} -- Implementation
